@@ -2,6 +2,7 @@ from ._parameters import *
 import pandas as pd
 import numpy as np
 
+__all__ = ["MdTraj", "pdb2df", "atom_position", "atom_mass", "atom_bfactors"]
 class MdTraj :
     """
     Iterator object that allow to loop over the frames in a md trajectory in the PDB format.
