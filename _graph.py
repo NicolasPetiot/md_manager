@@ -1,12 +1,18 @@
 from ._parameters import *
-from ._AtomSelection import AtomSelection
+#from ._AtomSelection import AtomSelection
 import networkx as nx
 import numpy as np
 from scipy.spatial import distance_matrix
 from scipy.linalg import eigh
 
 ### Create Graph Representation ###
-def sele2graph(sele:AtomSelection, contact_threshold = 4.0):
+def df2graph(df, contact_threshold = 4.0):
+    """
+    
+    """
+    # TODO
+
+def sele2graph(sele, contact_threshold = 4.0):
     """
     
     """

@@ -42,6 +42,5 @@ bfact = md.atom_bfactors(df)
 
 ## Free-energy landscape analysis
 
-## CUTABI
 ---
 Contact : Nicolas.Petiot01@u-bourgogne.fr
