@@ -2,7 +2,7 @@ from ._parameters import *
 import pandas as pd
 import numpy as np
 
-__all__ = ["MdTraj", "pdb2df", "atom_position", "atom_mass", "atom_bfactors"]
+__all__ = ["MdTraj", "pdb2df", "df2pdb", "atom_position", "atom_mass", "atom_bfactors"]
 class MdTraj :
     """
     Iterator object that allow to loop over the frames in a md trajectory in the PDB format.
@@ -86,6 +86,59 @@ def pdb2df(filename:str) -> pd.DataFrame:
                 atoms.append(scan_pdb_line(line))
 
     return pd.DataFrame(atoms, columns=["name", "resn", "chain", "resi", "segi", "alt", "x", "y", "z", "b", "e", "m", "hetatm"])
+
+def df2pdb(df:pd.DataFrame, filename:str):
+    """
+    Generates a pdb file from the atoms in inputed DataFrame.
+    """
+    with open(filename, "w") as file :
+        file.write("HEADER Generated with md_manager.")
+        file.write("MODEL     1\n")
+        
+        id = 0
+        APO = df.query("hetatm == False")
+        HET = df.query("hetatm == True")
+
+        for _, chain in APO.groupby(["chain"]):
+            for _, atom in chain.iterrows():
+                id += 1
+                file.write(serie2pdb_line(atom, id))
+            file.write("TER\n")
+        
+        for _, atom in HET.iterrows():
+            id += 1
+            file.write(serie2pdb_line(atom, id))
+        file.write("ENDMDL\n")
+
+
+def serie2pdb_line(s:pd.Series, id:int):
+    """
+    Generates a string that contains informations about an atom in pdb format.
+    """
+
+    if s.hetatm :
+        hetatm = "HETATM"
+    else :
+        hetatm = "ATOM  "
+
+    # strings :
+    name = s["name"]
+    alt = s["alt"]
+    resn = s["resn"]
+    chain = s["chain"]
+    resi = s["resi"]
+    segi = s["segi"]
+    e = s["e"]
+    # insertion code missing
+
+    # floating numbers
+    x = s.x
+    y = s.y
+    z = s.z
+    # occupancy missing
+    b = s.b
+
+    return f"{hetatm}{id:5d} {name}{alt}{resn} {chain}{resi:4d}    {x:8.3f}{y:8.3f}{z:8.3f}      {b:6.2f}      {segi}{e}\n"
 
 
 def scan_pdb_line(line):
