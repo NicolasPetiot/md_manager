@@ -156,7 +156,7 @@ class PDBfile :
         """
         Generates a pdb file from an inputed DataFrame.
         """
-        with open(filename, "r") as file :
+        with open(filename, "w") as file :
             if title != "":
                 file.write("TITLE     " + title + "\n")
             if remark != "":
@@ -164,15 +164,18 @@ class PDBfile :
                     file.write("REMARK    " + line + "\n")
             
             file.write("MODEL        1\n")
+            id = 0
             APO = df[df.record_name == "ATOM  "]
             HET = df[df.record_name == "HETATM"]
             for _, chain in APO.groupby(["chain"]):
-                for atom in chain.iterrows():
-                    line = cls._generate_pdb_line(atom)
+                for _, atom in chain.iterrows():
+                    id += 1
+                    line = cls._generate_pdb_line(atom, id)
                     file.write(line)
                 file.write("TER\n")
             for atom in HET.iterrows():
-                line = cls._generate_pdb_line(atom)
+                id += 1
+                line = cls._generate_pdb_line(atom, id)
                 file.write(line)
             file.write("TER\n")
             file.write("ENDMDL\n")
@@ -195,14 +198,14 @@ class PDBfile :
 
         # extract float/int
         id    = f"{id:5d}"
-        resi  = f"{atom.resi:3d}"
+        resi  = f"{atom.resi:4d}"
         x     = f"{atom.x:8.3f}"
         y     = f"{atom.y:8.3f}"
         z     = f"{atom.z:8.3f}"
         occup = f"{atom.occupancy:6.2f}"
         b     = f"{atom.b:6.2f}"
 
-        line = "%s%s %s%s%s %s%s%s   %s%s%s%s%s      %s%s\n"%(
+        line = "%s%s %s%s%s %s%s%s   %s%s%s%s%s      %s%s%s\n"%(
             record_name, id, name, alt, resn, chain, resi, insertion, x, y, z, occup, b, segi, elem, charge
         )
         return line
