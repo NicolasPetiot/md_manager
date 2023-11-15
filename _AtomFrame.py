@@ -14,7 +14,7 @@ class PDBfile :
 
     def __len__(self) -> int :
         """
-        Returns the number of frames in trajectory
+        Returns the number of frames in trajectory.
         """
         len = 0 
         close = False
@@ -62,7 +62,7 @@ class PDBfile :
     def __next__(self):
         """
         Is called using 'for model in pdb'.
-        Returns a pandas.DataFrame that corresponds to the next MODEL in PDBfile.
+        Returns a pandas.DataFrame that corresponds to the next MODEL in PDB file.
 
         Caution : pdb.file must be oppened.
 
@@ -104,7 +104,8 @@ class PDBfile :
     @staticmethod
     def _scan_pdb_line(line:str):
         """
-        Returns a tuple that contains the (record_name, name, alt, resn, chain, resi, insertion, x, y, z, occupancy, b, segi, elem, charge, mass) informations about an atom line in the pdb file.
+        Returns a tuple that contains the (record_name, name, alt, resn, chain, resi, insertion, x, y, z, occupancy, b, segi, elem, charge, mass) 
+        informations about an atom line in the PDB file.
         """
         if line.startswith("ATOM"):
             record_name = "ATOM  "
@@ -142,7 +143,7 @@ class PDBfile :
     
     def read2df(self):
         """
-        Returns a pandas.DataFrame that contains all the atoms fount in the PDBfile.
+        Returns a pandas.DataFrame that contains all the atoms fount in the PDB file.
         """
         atoms = []
         with open(self.file.name, "r") as file :
