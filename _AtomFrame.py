@@ -2,11 +2,11 @@ from ._parameters import *
 import pandas as pd
 import numpy as np
 
-# __all__ = ["MdTraj", "pdb2df", "df2pdb", "atom_position", "atom_mass", "atom_bfactors"]
-
 class PDBfile :
     """
     Iterator object that allow to loop over the frames in a md trajectory in the PDB format.
+
+    PDBfile(filename).read2df() returns a frame that contains all the atoms of the file.
     """
     def __init__(self, filename) -> None:
         self.file = open(filename, "r")
@@ -17,17 +17,17 @@ class PDBfile :
         Returns the number of frames in trajectory
         """
         len = 0 
+        close = False
         if self.file.closed :
             self.file = open(self.file.name, "r")
-            for line in self.file :
-                if line[:5] == "MODEL":
-                    len += 1
-            self.file.close()
+            close = True
 
-        else :
-            for line in self.file :
-                if line[:5] == "MODEL":
-                    len += 1
+        for line in self.file :
+            if line[:5] == "MODEL":
+                len += 1
+
+        if close :
+            self.file.close()
 
         return len
 
@@ -113,7 +113,7 @@ class PDBfile :
         else :
             raise ValueError("Input 'line' is not associated to an atom in a pdb file.")
         
-        atom_id   = line[ 6:11]
+        #atom_id   = line[ 6:11]
         name      = line[12:16]
         alt       = line[16:17]
         resn      = line[17:20]
@@ -134,7 +134,10 @@ class PDBfile :
         segi      = line[72:76]
         elem      = line[76:78]
         charge    = line[78:79]
-        mass      = ATOMIC_MASSES[elem]
+        try :
+            mass      = ATOMIC_MASSES[elem]
+        except KeyError:
+            raise KeyError(f"Unknown element symbol '{elem}'. Please update the ATOMIC_MASSES dictionary in '_parameters.py'.")
         return record_name, name, alt, resn, chain, resi, insertion, x, y, z, occupancy, b, segi, elem, charge, mass
     
     def read2df(self):
@@ -147,62 +150,66 @@ class PDBfile :
                 if line[:6] in {"ATOM  ", "HETATM"}:
                     atoms.append(self._scan_pdb_line(line))
         return self._build_df_from_atom_list(atoms) 
+    
+    @classmethod
+    def df2pdb(cls, df:pd.DataFrame, filename: str, title = "", remark = "") -> None:
+        """
+        Generates a pdb file from an inputed DataFrame.
+        """
+        with open(filename, "r") as file :
+            if title != "":
+                file.write("TITLE     " + title + "\n")
+            if remark != "":
+                for line in remark.splitlines():
+                    file.write("REMARK    " + line + "\n")
+            
+            file.write("MODEL        1\n")
+            APO = df[df.record_name == "ATOM  "]
+            HET = df[df.record_name == "HETATM"]
+            for _, chain in APO.groupby(["chain"]):
+                for atom in chain.iterrows():
+                    line = cls._generate_pdb_line(atom)
+                    file.write(line)
+                file.write("TER\n")
+            for atom in HET.iterrows():
+                line = cls._generate_pdb_line(atom)
+                file.write(line)
+            file.write("TER\n")
+            file.write("ENDMDL\n")
+
+    @staticmethod
+    def _generate_pdb_line(atom:pd.Series, id:int) -> str:
+        """
+        Generates a pdb line from an input series that contains atom's information.
+        """
+        # extract strings :
+        record_name = atom["record_name"]
+        name        = atom["name"]
+        alt         = atom["alt"]
+        resn        = atom["resn"]
+        chain       = atom["chain"]
+        insertion   = atom["insertion"]
+        segi        = atom["segi"]
+        elem        = atom["e"]
+        charge      = atom["q"]
+
+        # extract float/int
+        id    = f"{id:5d}"
+        resi  = f"{atom.resi:3d}"
+        x     = f"{atom.x:8.3f}"
+        y     = f"{atom.y:8.3f}"
+        z     = f"{atom.z:8.3f}"
+        occup = f"{atom.occupancy:6.2f}"
+        b     = f"{atom.b:6.2f}"
+
+        line = "%s%s %s%s%s %s%s%s   %s%s%s%s%s      %s%s\n"%(
+            record_name, id, name, alt, resn, chain, resi, insertion, x, y, z, occup, b, segi, elem, charge
+        )
+        return line
+
+
     ############################
     
-
-def df2pdb(df:pd.DataFrame, filename:str):
-    """
-    Generates a pdb file from the atoms in inputed DataFrame.
-    """
-    with open(filename, "w") as file :
-        file.write("HEADER Generated with md_manager.")
-        file.write("MODEL     1\n")
-        
-        id = 0
-        APO = df.query("hetatm == False")
-        HET = df.query("hetatm == True")
-
-        for _, chain in APO.groupby(["chain"]):
-            for _, atom in chain.iterrows():
-                id += 1
-                file.write(serie2pdb_line(atom, id))
-            file.write("TER\n")
-        
-        for _, atom in HET.iterrows():
-            id += 1
-            file.write(serie2pdb_line(atom, id))
-        file.write("ENDMDL\n")
-
-
-def serie2pdb_line(s:pd.Series, id:int):
-    """
-    Generates a string that contains informations about an atom in pdb format.
-    """
-
-    if s.hetatm :
-        hetatm = "HETATM"
-    else :
-        hetatm = "ATOM  "
-
-    # strings :
-    name = s["name"]
-    alt = s["alt"]
-    resn = s["resn"]
-    chain = s["chain"]
-    resi = s["resi"]
-    segi = s["segi"]
-    e = s["e"]
-    # insertion code missing
-
-    # floating numbers
-    x = s.x
-    y = s.y
-    z = s.z
-    # occupancy missing
-    b = s.b
-
-    return f"{hetatm}{id:5d} {name}{alt}{resn} {chain}{resi:4d}    {x:8.3f}{y:8.3f}{z:8.3f}      {b:6.2f}      {segi}{e}\n"
-
 
 def atom_position(df:pd.DataFrame) -> np.ndarray:
     """
