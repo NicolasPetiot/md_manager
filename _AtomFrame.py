@@ -2,8 +2,9 @@ from ._parameters import *
 import pandas as pd
 import numpy as np
 
-__all__ = ["MdTraj", "pdb2df", "df2pdb", "atom_position", "atom_mass", "atom_bfactors"]
-class MdTraj :
+# __all__ = ["MdTraj", "pdb2df", "df2pdb", "atom_position", "atom_mass", "atom_bfactors"]
+
+class PDBfile :
     """
     Iterator object that allow to loop over the frames in a md trajectory in the PDB format.
     """
@@ -30,6 +31,7 @@ class MdTraj :
 
         return len
 
+    ### Allow to use 'with statments' ###
     def __enter__(self):
         """
         Called using 'with MdTraj(filename) as self'.
@@ -43,9 +45,15 @@ class MdTraj :
         """
         self.file.close()
 
+    
+    #####################################
+
+    ### Allow to loop over frames ###
     def __iter__(self):
         """
-        Return the iterator object itself.
+        Is called at the beggining of a 'for model in pdb' statment.
+
+        Caution : pdb.file must be oppened.
         """
         if self.file.closed:
             self.file = open(self.file.name, "r")
@@ -53,39 +61,94 @@ class MdTraj :
     
     def __next__(self):
         """
-        Return the next frame
+        Is called using 'for model in pdb'.
+        Returns a pandas.DataFrame that corresponds to the next MODEL in PDBfile.
+
+        Caution : pdb.file must be oppened.
+
+        Caution : the text readed must contains 'ENDMDL' at the end of a model. If not, please use 'read2df' instead.
         """
         atoms = []
         for line in self.file :
             if line[:6] == "ENDMDL":
-                return pd.DataFrame(atoms, columns=["name", "resn", "chain", "resi", "segi", "alt", "x", "y", "z", "b", "e", "m", "hetatm"])
+                return self._build_df_from_atom_list(atoms)
             
             # append atoms with potential new informations
-            if line[:4] == "ATOM" or line[:6] == "HETATM":
-                atoms.append(scan_pdb_line(line))
+            if line[:6] in {"ATOM  ", "HETATM"}:
+                atoms.append(self._scan_pdb_line(line))
             
-        # end of file :
-        self.file.close()
         raise StopIteration
     
-    def __del__(self):
+    def open(self):
         """
-        Called with del self.
+        Opens the pdb.file wrapper.
+        """
+        self.file = open(self.file.name, "r")
+
+    def close(self):
+        """
+        Closes the pdb.file wrapper.
         """
         self.file.close()
+    #################################
 
+    ### Manipulate pdb lines ###
+    @staticmethod
+    def _build_df_from_atom_list(atoms:list):
+        """
+        Returns a pandas.DataFrame that contains the atoms in the input list.
+        """
+        columns=["record_name", "name", "alt", "resn", "chain", "resi", "insertion", "x", "y", "z", "occupancy", "b", "segi", "e", "q", "m"]
+        return pd.DataFrame(atoms, columns=columns)
 
-def pdb2df(filename:str) -> pd.DataFrame:
-    """
-    Returns a pandas.DataFrame that contains informations about all the atoms in a pdb file.
-    """
-    with open(filename, "r") as file :
+    @staticmethod
+    def _scan_pdb_line(line:str):
+        """
+        Returns a tuple that contains the (record_name, name, alt, resn, chain, resi, insertion, x, y, z, occupancy, b, segi, elem, charge, mass) informations about an atom line in the pdb file.
+        """
+        if line.startswith("ATOM"):
+            record_name = "ATOM  "
+        elif line.startswith("HETATM"):
+            record_name = "HETATM"
+        else :
+            raise ValueError("Input 'line' is not associated to an atom in a pdb file.")
+        
+        atom_id   = line[ 6:11]
+        name      = line[12:16]
+        alt       = line[16:17]
+        resn      = line[17:20]
+        chain     = line[21:22]
+        resi      = int(line[22:26])
+        insertion = line[26:27]
+        x         = float(line[30:38])
+        y         = float(line[38:46])
+        z         = float(line[46:54])
+        try :
+            occupancy = float(line[54:60])
+        except ValueError :
+            occupancy = 1.0
+        try :
+            b         = float(line[60:66])
+        except ValueError :
+            b         = 0.0
+        segi      = line[72:76]
+        elem      = line[76:78]
+        charge    = line[78:79]
+        mass      = ATOMIC_MASSES[elem]
+        return record_name, name, alt, resn, chain, resi, insertion, x, y, z, occupancy, b, segi, elem, charge, mass
+    
+    def read2df(self):
+        """
+        Returns a pandas.DataFrame that contains all the atoms fount in the PDBfile.
+        """
         atoms = []
-        for line in file :
-            if line[:4] == "ATOM" or line[:6] == "HETATM" :
-                atoms.append(scan_pdb_line(line))
-
-    return pd.DataFrame(atoms, columns=["name", "resn", "chain", "resi", "segi", "alt", "x", "y", "z", "b", "e", "m", "hetatm"])
+        with open(self.file.name, "r") as file :
+            for line in file:
+                if line[:6] in {"ATOM  ", "HETATM"}:
+                    atoms.append(self._scan_pdb_line(line))
+        return self._build_df_from_atom_list(atoms) 
+    ############################
+    
 
 def df2pdb(df:pd.DataFrame, filename:str):
     """
@@ -139,41 +202,6 @@ def serie2pdb_line(s:pd.Series, id:int):
     b = s.b
 
     return f"{hetatm}{id:5d} {name}{alt}{resn} {chain}{resi:4d}    {x:8.3f}{y:8.3f}{z:8.3f}      {b:6.2f}      {segi}{e}\n"
-
-
-def scan_pdb_line(line):
-    """
-    Returns a tuple that contains the (name, resn, chain, resi, segi, alt, x, y, z, beta, symbol, mass, hetatm) of the line in pdf file.
-    If the line does not start with ATOM or HETATM, the method raise a ValueError.
-    If the atom element is not included in the ATOMIC_MASSES parameter, the method raise a KeyError.
-    """
-    if line[:4] == "ATOM":
-        hetatm = False
-    elif line[:6] == "HETATM":
-        hetatm = True
-    else :
-        raise ValueError("line does not contains atom's information.")
-    #atom_num = int(line[6:11])
-    name     = line[12:16]
-    alt      = line[16] 
-    resn     = line[17:20]
-    chain    = line[21]
-    resi     = int(line[22:26])
-    x        = float(line[30:38])
-    y        = float(line[38:46])
-    z        = float(line[46:54])
-    try :
-        beta = float(line[60:66])
-    except ValueError :
-        beta = 0.0
-    segi     = line[72:76]
-    symbol   = line[76:78]
-    try :
-        mass = ATOMIC_MASSES[symbol]
-    except KeyError :
-        raise KeyError(f"Unknown atomic symbol {symbol}, please update the ATOMIC_MASSES dictionary.")
-
-    return name, resn, chain, resi, segi, alt, x, y, z, beta, symbol, mass, hetatm
 
 
 def atom_position(df:pd.DataFrame) -> np.ndarray:
