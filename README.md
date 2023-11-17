@@ -157,7 +157,7 @@ The normal modes are defined by the eigenvectors of the mass-weighted Hessian $\
 
 One of the useful metric that can be extracted from those modes is the Thermal B-factors of the nodes.
 
-$B_i = \frac{8\pi^2}{3}k_BT\sum_k \frac{1}{\tilde{\omega}_k^2}\left( \frac{\vec{e}_{k, i}}{\sqrt{M_i}} \right)^2$
+$B_i = \frac{8\pi^2}{3}k_{B}T\sum_{k} \frac{1}{\tilde{\omega}_{k}^2}\left( \frac{\vec{e}_{k, i}}{\sqrt{M_{i}}} \right)^2$
 
 
 
