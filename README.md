@@ -157,9 +157,8 @@ The normal modes are defined by the eigenvectors of the mass-weighted Hessian $\
 
 One of the useful metric that can be extracted from those modes is the Thermal B-factors of the nodes.
 
-\begin{equation}
-    B_i = \frac{8\pi^2}{3}k_BT\sum_k \frac{1}{\tilde{\omega}_k^2}\left( \frac{\vec{e}_{k, i}}{\sqrt{M_i}} \right)^2
-\end{equation}
+$B_i = \frac{8\pi^2}{3}k_BT\sum_k \frac{1}{\tilde{\omega}_k^2}\left( \frac{\vec{e}_{k, i}}{\sqrt{M_i}} \right)^2$
+
 
 
 The extraction of thermal B-factors is achieved with `md.local_MSF`. Finally the code bellow runs a Bfactor prediction and save it in a pdb file to allow easy vizualization.
