@@ -157,7 +157,7 @@ import md_manager.ANM as anm
 
 df = md.PDBfile("file.pdb").read2df()
 graph  = anm.df2graph(df)
-laplacian = anm.graph_laplacian(G)
+laplacian = anm.graph_laplacian(graph)
 eigenvals, eigenvecs = anm.graph_collective_modes(laplacian)
 ```
 
