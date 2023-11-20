@@ -130,8 +130,8 @@ from scipy.spatial import distance_matrix
 
 # load structure
 df = md.PDBfile("file.pdb").read2df()
-nodes_position = md.atom_position(df)
-nodes_mass = md.atom_mass(df)
+nodes_position = df[["x", "y", "z"]].to_numpy(dtype = float)
+nodes_mass = df.m.to_numpy(dtype = float)
 distance_inter_nodes = distance_matrix(nodes_position, nodes_position)
 
 # compute Hessian with appropriate model
@@ -144,6 +144,21 @@ B = nma.local_MSF(eigenvals=eigenvalues, eigenvecs=eigenvectors, nodes_mass=node
 # save prediction in pdb file:
 df.b = pd.Series(B, index=df.index)
 md.PDBfile.df2pdb(df=df, filename="out.pdb")
+```
+
+### 1D Graph representation:
+Collective modes computed above are extracted from tree dimentional representation of structures but studying topological properties can be achieved with much simpler 1D graphs. (see [Einstein Model of a Graph to Characterize Protein Folded/Unfolded States](https://www.mdpi.com/1420-3049/28/18/6659)). To build such graph, one needs just the position of the set of node to consider and a contact threshold to determine wether or not two nodes are connected by an edge. Such construction is achieved using the `NMA.df2graph` function.
+
+From such Graph, interactions are computed by a Laplacian extracted by `ANM.graph_laplacian` and collective modes are then computed from `ANM.graph_collective_modes`.
+
+```python
+import md_manager as md
+import md_manager.ANM as anm
+
+df = md.PDBfile("file.pdb").read2df()
+graph  = anm.df2graph(df)
+laplacian = anm.graph_laplacian(G)
+eigenvals, eigenvecs = anm.graph_collective_modes(laplacian)
 ```
 
 ---
