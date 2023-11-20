@@ -169,7 +169,7 @@ import pandas as pd
 from scipy.spatial import distance_matrix
 
 # load structure
-df = md.PDBfile("PDB/AlphaFold/GstD01_AlphaFold2.pdb").read2df()
+df = md.PDBfile("file.pdb").read2df()
 nodes_position = md.atom_position(df)
 nodes_mass = md.atom_mass(df)
 distance_inter_nodes = distance_matrix(nodes_position, nodes_position)
