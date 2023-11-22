@@ -144,9 +144,9 @@ def fetch_protein_data_bank(pdb_code:str)->pd.DataFrame:
     atoms = []
     for line in lines :
         if line[:6] in {"ATOM  ", "HETATM"}:
-            atoms.append(PDBfile._scan_pdb_line(line))
+            atoms.append(_scan_pdb_line(line))
 
-    return PDBfile._build_df_from_atom_list(atoms)
+    return _build_df_from_atom_list(atoms)
 
 
 ### Conformational angles computations ###
