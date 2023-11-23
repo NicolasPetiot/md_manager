@@ -5,7 +5,10 @@ import numpy as np
 import sys
 from urllib.request import urlopen
 
-__all__ = ["PDBfile", "atom_position", "atom_mass", "atom_bfactors", "fetch_protein_data_bank", "angles", "dihedral_angles", "theta_angles", "gamma_angles", "chi_angles"]
+__all__ = [
+    "PDBfile", "atom_position", "atom_mass", "atom_bfactors", "fetch_protein_data_bank", "angles", "dihedral_angles", "theta_angles", 
+    "gamma_angles", "chi_angles", "df2pdb", "dfs2traj"
+]
 
 class PDBfile :
     """
@@ -230,6 +233,37 @@ def chi_angles(df:pd.DataFrame):
 
     return Chis
 
+def df2pdb(df:pd.DataFrame, filename: str, title = "", remark = "") -> None:
+    """
+    Generates a pdb file from an inputed DataFrame.
+    """
+    with open(filename, "w") as file :
+        if title != "":
+            file.write("TITLE     " + title + "\n")
+        if remark != "":
+            for line in remark.splitlines():
+                file.write("REMARK    " + line + "\n")
+            
+        file.write("MODEL        1\n")
+        _write_pdb_atom_lines(file=file, df=df)
+        file.write("ENDMDL\n")
+
+def dfs2traj(dfs:list[pd.DataFrame], filename:str, title = "", remark = ""):
+    """
+    Generates a pdb file containing all the inputed DataFrames in the form of a trajectory file.
+    """
+    with open(filename, "w") as file :
+        if title != "":
+            file.write("TITLE     " + title + "\n")
+        if remark != "":
+            for line in remark.splitlines():
+                file.write("REMARK    " + line + "\n")
+            
+        for model, df in enumerate(dfs) :
+            file.write(f"MODEL    {model+1:5d}\n")
+            _write_pdb_atom_lines(file=file, df=df)
+            file.write("ENDMDL\n")
+
 ### Useful functions that will not be in the __all__ list ###
 
 def _build_df_from_atom_list(atoms:list):
@@ -307,30 +341,24 @@ def _generate_pdb_line(atom:pd.Series, id:int) -> str:
     )
     return line
 
-def df2pdb(cls, df:pd.DataFrame, filename: str, title = "", remark = "") -> None:
+def _write_pdb_atom_lines(file, df):
     """
-    Generates a pdb file from an inputed DataFrame.
+    Write the atom lines in file object.
     """
-    with open(filename, "w") as file :
-        if title != "":
-            file.write("TITLE     " + title + "\n")
-        if remark != "":
-            for line in remark.splitlines():
-                file.write("REMARK    " + line + "\n")
-            
-        file.write("MODEL        1\n")
-        id = 0
-        APO = df[df.record_name == "ATOM  "]
-        HET = df[df.record_name == "HETATM"]
-        for _, chain in APO.groupby(["chain"]):
-            for _, atom in chain.iterrows():
-                id += 1
-                line = cls._generate_pdb_line(atom, id)
-                file.write(line)
-            file.write("TER\n")
-        for atom in HET.iterrows():
+    id = 0
+    APO = df[df.record_name == "ATOM  "]
+    for _, chain in APO.groupby(["chain"]):
+        for _, atom in chain.iterrows():
             id += 1
             line = _generate_pdb_line(atom, id)
             file.write(line)
         file.write("TER\n")
-        file.write("ENDMDL\n")
+
+    
+    HET = df[df.record_name == "HETATM"]
+    for atom in HET.iterrows():
+        id += 1
+        line = _generate_pdb_line(atom, id)
+        file.write(line)
+
+
