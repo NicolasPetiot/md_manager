@@ -14,14 +14,15 @@ def ANM_hessian(nodes_position = None, nodes_mass = None, df = None, distance_in
 
     Input can be 'nodes_position' and 'nodes_mass' or 'df'. By default the spring constant is set to 1.0 kcal/mol/AA² and the cutoff radius is set to 5.0AA.
     """
-    if df != None :
+    NoneType = type(None)
+    if type(df) != NoneType :
         nodes_position = df[["x", "y", "z"]].to_numpy(dtype = float)
         nodes_mass = df.m.to_numpy(dtype = float)
 
-    elif nodes_position == None or nodes_mass == None:
+    elif type(nodes_position) == NoneType or type(nodes_mass) == NoneType:
         raise ValueError("Please use nodes_position and nodes_mass or df as argument(s).")
     
-    if distance_inter_nodes == None :
+    if type(distance_inter_nodes) == NoneType :
         distance_inter_nodes = distance_matrix(nodes_position, nodes_position)
 
     return compiled_ANM_hessian_builder(nodes_position, nodes_mass, distance_inter_nodes, cutoff_radius, spring_constant)
@@ -33,14 +34,15 @@ def pfANM_hessian(nodes_position = None, nodes_mass = None, df = None, distance_
 
     Input can be 'nodes_position' and 'nodes_mass' or 'df'. By default the spring constant is set to 1.0 kcal/mol/AA².
     """
-    if df != None :
+    NoneType = type(None)
+    if type(df) != NoneType :
         nodes_position = df[["x", "y", "z"]].to_numpy(dtype = float)
         nodes_mass = df.m.to_numpy(dtype = float)
 
-    elif nodes_position == None or nodes_mass == None:
+    elif type(nodes_position) == NoneType or type(nodes_mass) == NoneType:
         raise ValueError("Please use nodes_position and nodes_mass or df as argument(s).")
 
-    if distance_inter_nodes == None :
+    if type(distance_inter_nodes) == NoneType :
         distance_inter_nodes = distance_matrix(nodes_position, nodes_position)
     
     return compiled_pfANM_hessian_builder(nodes_position, nodes_mass, distance_inter_nodes, spring_constant)
