@@ -1,6 +1,4 @@
-from ._parameters import *
-from ._utils import *
-
+from ._utils import _build_df_from_atom_list, _scan_pdb_line
 class PDBfile :
     """
     Iterator object that allow to loop over the frames in a md trajectory in the PDB format.

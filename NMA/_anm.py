@@ -1,98 +1,49 @@
 from .._parameters import *
+
 import numpy as np
 from numba import jit
 from scipy.linalg import eigh
+from scipy.spatial import distance_matrix
 
 __all__ = ["ANM_hessian", "pfANM_hessian", "collective_modes", "local_MSF", "non_local_MSF"]
 
 ### Hessian computations ###
-@jit(nopython = True, cache=True)
-def ANM_hessian(nodes_position, nodes_mass, distance_inter_nodes, cutoff_radius = 5.0, spring_constant = 1.0):
+def ANM_hessian(nodes_position = None, nodes_mass = None, df = None, distance_inter_nodes = None, cutoff_radius = 5.0, spring_constant = 1.0):
     """
     Returns a np.ndarray that corresponds to the mass-weighted Hessian for the set of input nodes.
+
+    Input can be 'nodes_position' and 'nodes_mass' or 'df'. By default the spring constant is set to 1.0 kcal/mol/AA² and the cutoff radius is set to 5.0AA.
     """
-    Nnodes = len(nodes_position)
-    hessian = np.zeros((3*Nnodes, 3*Nnodes))
-    squared_mass = np.zeros((3*Nnodes, 3*Nnodes))
+    if df != None :
+        nodes_position = df[["x", "y", "z"]].to_numpy(dtype = float)
+        nodes_mass = df.m.to_numpy(dtype = float)
 
-    # loop over nodes :
-    for i in range(Nnodes):
-        Ri = nodes_position[i, :]
-        mi = nodes_mass[i]
-        for j in range(i, Nnodes):
-            mj = nodes_mass[j]
+    elif nodes_position == None or nodes_mass == None:
+        raise ValueError("Please use nodes_position and nodes_mass or df as argument(s).")
+    
+    if distance_inter_nodes == None :
+        distance_inter_nodes = distance_matrix(nodes_position, nodes_position)
 
-            # update squared masses :
-            squared_mass[3*i:3*(i+1), 3*j:3*(j+1)] = mi*mj
-            squared_mass[3*j:3*(j+1), 3*i:3*(i+1)] = mi*mj
+    return compiled_ANM_hessian_builder(nodes_position, nodes_mass, distance_inter_nodes, cutoff_radius, spring_constant)
+    
 
-            # update hessian :
-            if i != j and distance_inter_nodes[i, j] <= cutoff_radius:
-                Rj = nodes_position[j, :]
-                Rij = Rj - Ri
-                Rij2 = distance_inter_nodes[i, j]**2
-
-                Hij = np.zeros((3, 3))
-                for xi in range(3):
-                    x = Rij[xi]
-                    for yi in range(xi, 3):
-                        y = Rij[yi]
-
-                        Hij[xi, yi] = x*y
-                        Hij[yi, xi] = x*y
-
-                Hij = -spring_constant * Hij / Rij2
-                
-                hessian[3*i:3*(i+1), 3*j:3*(j+1)] = Hij
-                hessian[3*j:3*(j+1), 3*i:3*(i+1)] = Hij
-                hessian[3*i:3*(i+1), 3*i:3*(i+1)] -= Hij
-                hessian[3*j:3*(j+1), 3*j:3*(j+1)] -= Hij
-
-    return hessian / np.sqrt(squared_mass)
-
-@jit(nopython = True, cache=True)
-def pfANM_hessian(nodes_position, nodes_mass, distance_inter_nodes, spring_constant = 1.0):
+def pfANM_hessian(nodes_position = None, nodes_mass = None, df = None, distance_inter_nodes = None, spring_constant = 1.0):
     """
     Returns a np.ndarray that corresponds to the parameter-free mass-weighted Hessian for the set of input nodes.
+
+    Input can be 'nodes_position' and 'nodes_mass' or 'df'. By default the spring constant is set to 1.0 kcal/mol/AA².
     """
-    Nnodes = len(nodes_position)
-    hessian = np.zeros((3*Nnodes, 3*Nnodes))
-    squared_mass = np.zeros((3*Nnodes, 3*Nnodes))
+    if df != None :
+        nodes_position = df[["x", "y", "z"]].to_numpy(dtype = float)
+        nodes_mass = df.m.to_numpy(dtype = float)
 
-    # loop over nodes :
-    for i in range(Nnodes):
-        Ri = nodes_position[i, :]
-        mi = nodes_mass[i]
-        for j in range(i, Nnodes):
-            mj = nodes_mass[j]
+    elif nodes_position == None or nodes_mass == None:
+        raise ValueError("Please use nodes_position and nodes_mass or df as argument(s).")
 
-            # update squared masses :
-            squared_mass[3*i:3*(i+1), 3*j:3*(j+1)] = mi*mj
-            squared_mass[3*j:3*(j+1), 3*i:3*(i+1)] = mi*mj
-
-            # update hessian :
-            if i != j :
-                Rj = nodes_position[j, :]
-                Rij = Rj - Ri
-                Rij4 = distance_inter_nodes[i, j]**4
-
-                Hij = np.zeros((3, 3))
-                for xi in range(3):
-                    x = Rij[xi]
-                    for yi in range(xi, 3):
-                        y = Rij[yi]
-
-                        Hij[xi, yi] = x*y
-                        Hij[yi, xi] = x*y
-
-                Hij = -spring_constant * Hij / Rij4
-                
-                hessian[3*i:3*(i+1), 3*j:3*(j+1)] = Hij
-                hessian[3*j:3*(j+1), 3*i:3*(i+1)] = Hij
-                hessian[3*i:3*(i+1), 3*i:3*(i+1)] -= Hij
-                hessian[3*j:3*(j+1), 3*j:3*(j+1)] -= Hij
-
-    return hessian / np.sqrt(squared_mass)
+    if distance_inter_nodes == None :
+        distance_inter_nodes = distance_matrix(nodes_position, nodes_position)
+    
+    return compiled_pfANM_hessian_builder(nodes_position, nodes_mass, distance_inter_nodes, spring_constant)
 
 def collective_modes(hessian):
     """
@@ -153,3 +104,88 @@ def non_local_MSF(eigenvals:np.ndarray, eigenvecs:np.ndarray, nodes_mass:np.ndar
             d[j, i] = dij
 
     return d
+
+@jit(nopython = True, cache = True)
+def compiled_pfANM_hessian_builder(nodes_position:np.ndarray, nodes_mass:np.ndarray, distance_inter_nodes:np.ndarray, spring_constant:float):
+    """
+    
+    """
+    Nnodes = len(nodes_position)
+    hessian = np.zeros((3*Nnodes, 3*Nnodes))
+    squared_mass = np.zeros((3*Nnodes, 3*Nnodes))
+
+    # loop over nodes :
+    for i in range(Nnodes):
+        Ri = nodes_position[i, :]
+        mi = nodes_mass[i]
+        for j in range(i, Nnodes):
+            mj = nodes_mass[j]
+
+            # update squared masses :
+            squared_mass[3*i:3*(i+1), 3*j:3*(j+1)] = mi*mj
+            squared_mass[3*j:3*(j+1), 3*i:3*(i+1)] = mi*mj
+
+            # update hessian :
+            if i != j :
+                Rj = nodes_position[j, :]
+                Rij = Rj - Ri
+                Rij4 = distance_inter_nodes[i, j]**4
+
+                Hij = np.zeros((3, 3))
+                for xi in range(3):
+                    x = Rij[xi]
+                    for yi in range(xi, 3):
+                        y = Rij[yi]
+
+                        Hij[xi, yi] = x*y
+                        Hij[yi, xi] = x*y
+
+                Hij = -spring_constant * Hij / Rij4
+                
+                hessian[3*i:3*(i+1), 3*j:3*(j+1)] = Hij
+                hessian[3*j:3*(j+1), 3*i:3*(i+1)] = Hij
+                hessian[3*i:3*(i+1), 3*i:3*(i+1)] -= Hij
+                hessian[3*j:3*(j+1), 3*j:3*(j+1)] -= Hij
+
+    return hessian / np.sqrt(squared_mass)
+
+@jit(nopython = True, cache = True)
+def compiled_ANM_hessian_builder(nodes_position, nodes_mass, distance_inter_nodes, cutoff_radius = 5.0, spring_constant = 1.0):
+    Nnodes = len(nodes_position)
+    hessian = np.zeros((3*Nnodes, 3*Nnodes))
+    squared_mass = np.zeros((3*Nnodes, 3*Nnodes))
+
+    # loop over nodes :
+    for i in range(Nnodes):
+        Ri = nodes_position[i, :]
+        mi = nodes_mass[i]
+        for j in range(i, Nnodes):
+            mj = nodes_mass[j]
+
+            # update squared masses :
+            squared_mass[3*i:3*(i+1), 3*j:3*(j+1)] = mi*mj
+            squared_mass[3*j:3*(j+1), 3*i:3*(i+1)] = mi*mj
+
+            # update hessian :
+            if i != j and distance_inter_nodes[i, j] <= cutoff_radius:
+                Rj = nodes_position[j, :]
+                Rij = Rj - Ri
+                Rij2 = distance_inter_nodes[i, j]**2
+
+                Hij = np.zeros((3, 3))
+                for xi in range(3):
+                    x = Rij[xi]
+                    for yi in range(xi, 3):
+                        y = Rij[yi]
+
+                        Hij[xi, yi] = x*y
+                        Hij[yi, xi] = x*y
+
+                Hij = -spring_constant * Hij / Rij2
+                
+                hessian[3*i:3*(i+1), 3*j:3*(j+1)] = Hij
+                hessian[3*j:3*(j+1), 3*i:3*(i+1)] = Hij
+                hessian[3*i:3*(i+1), 3*i:3*(i+1)] -= Hij
+                hessian[3*j:3*(j+1), 3*j:3*(j+1)] -= Hij
+
+    return hessian / np.sqrt(squared_mass)
