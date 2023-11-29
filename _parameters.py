@@ -40,3 +40,6 @@ ATOM_NAME_SELECTION = {
     "TYR" : [" N  ", " CA ", " CB ", " CG ", " CD1"],
     "VAL" : [" N  ", " CA ", " CB ", " CG1"]
 } # atoms used for computation of dihedral angles (see 'http://www.mlb.co.jp/linux/science/garlic/doc/commands/dihedrals.html')
+
+DF_COLUMNS = ["record_name", "name", "alt", "resn", "chain", "resi", "insertion", "x", "y", "z", "occupancy", "b", "segi", "e", "q", "m"]
+DF_TYPES   = [str, str, str, str, str, int, str, float, float, float, float, float, str, str, str, float]
