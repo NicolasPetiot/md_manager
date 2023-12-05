@@ -72,15 +72,15 @@ def _generate_pdb_line(atom:pd.Series, id:int) -> str:
     Generates a pdb line from an input series that contains atom's information.
     """
     # extract strings :
-    record_name = atom["record_name"]
-    name        = atom["name"]
-    alt         = atom["alt"]
-    resn        = atom["resn"]
-    chain       = atom["chain"]
-    insertion   = atom["insertion"]
-    segi        = atom["segi"]
-    elem        = atom["e"]
-    charge      = atom["q"]
+    record_name = "%-6s"%atom["record_name"]
+    name        = " %-3s"%atom["name"]
+    alt         = "%1s"%atom["alt"]
+    resn        = "%3s"%atom["resn"]
+    chain       = "%1s"%atom["chain"]
+    insertion   = "%1s"%atom["insertion"]
+    segi        = "%-4s"%atom["segi"]
+    elem        = "%2s"%atom["e"]
+    charge      = "%2s"%atom["q"]
 
     # extract float/int
     id    = f"{id:5d}"
@@ -91,7 +91,7 @@ def _generate_pdb_line(atom:pd.Series, id:int) -> str:
     occup = f"{atom.occupancy:6.2f}"
     b     = f"{atom.b:6.2f}"
 
-    line = "%s%s %s%s%s %s%s%s   %s%s%s%s%s      %s%s%s\n"%(
+    line = "%s%s%s%s%s %s%s%s   %s%s%s%s%s      %s%s%s\n"%(
         record_name, id, name, alt, resn, chain, resi, insertion, x, y, z, occup, b, segi, elem, charge
     )
     return line
@@ -101,6 +101,22 @@ def _write_pdb_atom_lines(file, df):
     Write the atom lines in file object.
     """
     id = 0
+    # default values :
+    if df.alt.isna().all():
+        df["alt"] = ""
+    if df.insertion.isna().all():
+        df["insertion"] = ""
+    if df.occupancy.isna().all():
+        df["occupancy"] = 1.0
+    if df.b.isna().all():
+        df["b"] = 0.0
+    if df.segi.isna().all():
+        df["segi"] = ""
+    if df.e.isna().all():
+        df["e"] = " C"
+    if df.q.isna().all():
+        df["q"] = ""
+    
     APO = df[df.record_name == "ATOM  "]
     for _, chain in APO.groupby(["chain"]):
         for _, atom in chain.iterrows():
@@ -111,7 +127,7 @@ def _write_pdb_atom_lines(file, df):
 
     
     HET = df[df.record_name == "HETATM"]
-    for atom in HET.iterrows():
+    for _, atom in HET.iterrows():
         id += 1
         line = _generate_pdb_line(atom, id)
         file.write(line)
