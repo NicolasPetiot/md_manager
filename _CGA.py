@@ -1,43 +1,15 @@
-from ._utils import _build_df_from_atom_list, _scan_pdb_line, atom_position, _write_pdb_atom_lines
-
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-import sys
-from urllib.request import urlopen
+from .utils._params import ATOM_NAME_SELECTION_CHI
 
 __all__ = [
-    "fetch_protein_data_bank",
-    "angles", 
+    "angles",
     "dihedral_angles",
     "theta_angles",
     "gamma_angles",
-    "chi_angles",
-    "df2pdb",
-    "dfs2traj"
+    "chi_angles"
 ]
-
-### Load from Protein Data Bank ###
-
-def fetch_protein_data_bank(pdb_code:str)->pd.DataFrame:
-    """
-    Returns a pandas.DataFrame associated to the structure loaded from the 'rcsb.org' website.
-    """
-    url = f"https://files.rcsb.org/download/{pdb_code.lower()}.pdb"
-    response = urlopen(url)
-
-    txt = response.read()
-    lines = (txt.decode("utf-8") if sys.version_info[0] >= 3 else txt.decode("ascii")).splitlines()
-
-    atoms = []
-    for line in lines :
-        if line[:6] in {"ATOM  ", "HETATM"}:
-            atoms.append(_scan_pdb_line(line))
-
-    return _build_df_from_atom_list(atoms)
-
-
-### Conformational angles computations ###
 
 def angles(atom_position:np.ndarray) -> np.ndarray:
     """
@@ -92,7 +64,7 @@ def gamma_angles(df:pd.DataFrame):
     gamma = []
     for _, chain in df.query("name == ' CA '").groupby(["chain"]):
         gamma.append(np.nan)
-        xyz = atom_position(chain)
+        xyz = chain[["x", "y", "z"]].to_numpy(dtype=float)
         gamma += list(dihedral_angles(xyz))
         gamma.extend([np.nan, np.nan])
     return pd.Series(gamma, index=df.index, name="gamma")
@@ -105,10 +77,10 @@ def chi_angles(df:pd.DataFrame):
     for _, residue in df.groupby(["chain", "resi"]):
         # select only atoms for the computation of chi angles
         resn = residue["resn"].unique()[0]
-        residue = residue.query("name in @ATOM_NAME_SELECTION[@resn]") 
+        residue = residue.query("name in @ATOM_NAME_SELECTION_CHI[@resn]") 
 
         # chi angle computation :
-        xyz = atom_position(residue)
+        xyz = residue[["x", "y", "z"]].to_numpy(dtype=float)
         chis = dihedral_angles(xyz)
         for i, chi in enumerate(chis):
             i += 1
@@ -117,34 +89,3 @@ def chi_angles(df:pd.DataFrame):
             Chis["%d"%i].append(np.nan)
 
     return Chis
-
-def df2pdb(df:pd.DataFrame, filename: str, title = "", remark = "") -> None:
-    """
-    Generates a pdb file from an inputed DataFrame.
-    """
-    with open(filename, "w") as file :
-        if title != "":
-            file.write("TITLE     " + title + "\n")
-        if remark != "":
-            for line in remark.splitlines():
-                file.write("REMARK    " + line + "\n")
-            
-        file.write("MODEL        1\n")
-        _write_pdb_atom_lines(file=file, df=df)
-        file.write("ENDMDL\n")
-
-def dfs2traj(dfs:list[pd.DataFrame], filename:str, title = "", remark = ""):
-    """
-    Generates a pdb file containing all the inputed DataFrames in the form of a trajectory file.
-    """
-    with open(filename, "w") as file :
-        if title != "":
-            file.write("TITLE     " + title + "\n")
-        if remark != "":
-            for line in remark.splitlines():
-                file.write("REMARK    " + line + "\n")
-            
-        for model, df in enumerate(dfs) :
-            file.write(f"MODEL    {model+1:5d}\n")
-            _write_pdb_atom_lines(file=file, df=df)
-            file.write("ENDMDL\n")

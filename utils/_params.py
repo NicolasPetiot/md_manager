@@ -1,3 +1,13 @@
+__all__ = [
+    "TEMPERATURE",
+    "BOLTZMANN",
+    "AVOGADRO",
+    "ATOMIC_MASSES",
+    #"ATOM_NAME_SELECTION_CHI",
+    "DF_COLUMNS",
+    "DF_TYPES"
+]
+
 TEMPERATURE = 300.0          # K
 BOLTZMANN   = 1.987204259e-3 # kcal/mol/K (see : 'https://en.wikipedia.org/wiki/Boltzmann_constant')
 AVOGADRO    = 6.02214076e23  # 1/mol      (see : 'https://en.wikipedia.org/wiki/Avogadro_constant')
@@ -18,7 +28,7 @@ ATOMIC_MASSES = {
     "CU" : 63.5460, # Copper
 } # g/mol (see 'https://www.lenntech.com/periodic/mass/atomic-mass.htm')
 
-ATOM_NAME_SELECTION = {
+ATOM_NAME_SELECTION_CHI = {
     "ALA" : [" CA "],
     "ARG" : [" N  ", " CA ", " CB ", " CG ", " CD ", " NE ", " CZ ", " NH1"],
     "ASN" : [" N  ", " CA ", " CB ", " CG ", " OD1"],

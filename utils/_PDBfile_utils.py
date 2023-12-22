@@ -1,25 +1,16 @@
-from ._parameters import DF_COLUMNS, ATOMIC_MASSES
+from ._params import DF_COLUMNS, ATOMIC_MASSES
 
 import pandas as pd
-import numpy as np
+import sys
+from urllib.request import urlopen
 
-def atom_position(df:pd.DataFrame) -> np.ndarray:
-    """
-    Returns a numpy.ndarray that contains the [x, y, z] coordinates of the atoms in df.
-    """
-    return df[["x", "y", "z"]].to_numpy(dtype=float)
-
-def atom_mass(df:pd.DataFrame) -> np.ndarray:
-    """
-    Returns a numpy.ndarray that contains the masses of the atoms in df.
-    """
-    return df["m"].to_numpy(dtype=float)
-
-def atom_bfactors(df:pd.DataFrame) -> np.ndarray:
-    """
-    Returns a numpy.ndarray that contains the thermal bfactors of the atoms in df.
-    """
-    return df["b"].to_numpy(dtype=float)
+__all__ = [
+    "_build_df_from_atom_list",
+    "_scan_pdb_line",
+    "_generate_pdb_line",
+    "_generate_pdb_line_list",
+    "fetch_protein_data_bank"
+]
 
 def _build_df_from_atom_list(atoms:list):
     """
@@ -32,6 +23,12 @@ def _scan_pdb_line(line:str):
     """
     Returns a tuple that contains the (record_name, name, alt, resn, chain, resi, insertion, x, y, z, occupancy, b, segi, elem, charge, mass) 
     informations about an atom line in the PDB file.
+
+    By default,  the occupancy is set to 1.0.
+
+    By default, the Bfactors are set to 0.0 AA².
+
+    The mass is extracted from the md.ATOMIC_MASSES dictionary (see _params.py)
     """
     if line.startswith("ATOM"):
         record_name = "ATOM  "
@@ -96,10 +93,11 @@ def _generate_pdb_line(atom:pd.Series, id:int) -> str:
     )
     return line
 
-def _write_pdb_atom_lines(file, df):
+def _generate_pdb_line_list(df:pd.DataFrame):
     """
-    Write the atom lines in file object.
+    Generates a list of string that correspond to the ensemble ot atoms in input df.
     """
+    lines = []
     id = 0
     # default values :
     if df.alt.isna().all():
@@ -122,12 +120,30 @@ def _write_pdb_atom_lines(file, df):
         for _, atom in chain.iterrows():
             id += 1
             line = _generate_pdb_line(atom, id)
-            file.write(line)
-        file.write("TER\n")
+            lines.append(line)
+        lines.append("TER\n")
 
     
     HET = df[df.record_name == "HETATM"]
     for _, atom in HET.iterrows():
         id += 1
         line = _generate_pdb_line(atom, id)
-        file.write(line)
+        lines.append(line)
+    return lines
+
+def fetch_protein_data_bank(pdb_code:str)->pd.DataFrame:
+    """
+    Returns a pandas.DataFrame associated to the structure loaded from the 'rcsb.org' website.
+    """
+    url = f"https://files.rcsb.org/download/{pdb_code.lower()}.pdb"
+    response = urlopen(url)
+
+    txt = response.read()
+    lines = (txt.decode("utf-8") if sys.version_info[0] >= 3 else txt.decode("ascii")).splitlines()
+
+    atoms = []
+    for line in lines :
+        if line[:6] in {"ATOM  ", "HETATM"}:
+            atoms.append(_scan_pdb_line(line))
+
+    return _build_df_from_atom_list(atoms)

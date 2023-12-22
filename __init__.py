@@ -1,6 +1,7 @@
-from ._parameters import *
-from ._pdb_file_class import *
-from ._atom_frame_analysis import *
+from .utils._params import *
+from ._PDBfile import pdb
+from ._CGA import *
+from .utils._PDBfile_utils import fetch_protein_data_bank
 
 # sub packages :
 from . import NMA

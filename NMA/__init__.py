@@ -1,2 +1,1 @@
-from ._anm import *
-from ._graph import *
+from ._ANM import *
