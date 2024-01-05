@@ -1,5 +1,5 @@
 from .utils._params import *
-from ._PDBfile import pdb
+from ._PDBfile import pdb as PDBfile
 from ._CGA import *
 from .utils._PDBfile_utils import fetch_protein_data_bank
 
