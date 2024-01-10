@@ -1,5 +1,5 @@
 from ..utils._ANM_utils import _jit_ANM_hessian, _jit_pfANM_hessian, _jit_local_MSF
-from .._PDBfile import pdb
+from .._PDBfile import PDBfile
 
 import numpy as np
 import pandas as pd
@@ -74,7 +74,7 @@ def collective_modes(hessian):
 
 def predicted_Bfactors(
         eigenvals:np.ndarray=None, eigenvecs:np.ndarray=None, nodes_mass:np.ndarray = None,
-        hessian:np.ndarray=None, PDB:pdb = None, df:pd.DataFrame=None,
+        hessian:np.ndarray=None, PDB:PDBfile = None, df:pd.DataFrame=None,
         spring_constant=1.0, cutoff_radius=None, 
         convert2bfactors=True
     ):
@@ -112,6 +112,10 @@ def predicted_Bfactors(
                 raise ValueError("Not enougth information. Unable to compute nodes mass.")
             df = PDB.read2df()
         nodes_mass = df.m.to_numpy(dtype = float)
+
+    else :
+        if type(nodes_mass) == pd.Series:
+            nodes_mass = nodes_mass.to_numpy(dtype = float)
 
     return _jit_local_MSF(eigenvals, eigenvecs, nodes_mass, convert2bfactors)
     

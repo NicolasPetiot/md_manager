@@ -5,7 +5,9 @@ __all__ = [
     "ATOMIC_MASSES",
     #"ATOM_NAME_SELECTION_CHI",
     "DF_COLUMNS",
-    "DF_TYPES"
+    "DF_TYPES",
+    "ONE_LETTER_CODE",
+    #"THREE_LETTERS_CODE"
 ]
 
 TEMPERATURE = 300.0          # K
@@ -27,6 +29,11 @@ ATOMIC_MASSES = {
     "CA" : 40.0780, # Calcium
     "CU" : 63.5460, # Copper
 } # g/mol (see 'https://www.lenntech.com/periodic/mass/atomic-mass.htm')
+
+ONE_LETTER_CODE ={'VAL':'V', 'ILE':'I', 'LEU':'L', 'GLU':'E', 'GLN':'Q',
+'ASP':'D', 'ASN':'N', 'HIS':'H', 'TRP':'W', 'PHE':'F', 'TYR':'Y',
+'ARG':'R', 'LYS':'K', 'SER':'S', 'THR':'T', 'MET':'M', 'ALA':'A',
+'GLY':'G', 'PRO':'P', 'CYS':'C'}
 
 ATOM_NAME_SELECTION_CHI = {
     "ALA" : [" CA "],
