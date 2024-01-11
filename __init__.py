@@ -1,7 +1,7 @@
 from .utils._params import *
 from ._PDBfile import *
 from ._CGA import *
-from .utils._PDBfile_utils import fetch_protein_data_bank
+from .utils._PDBfile_utils import *
 
 # sub packages :
 from . import NMA
