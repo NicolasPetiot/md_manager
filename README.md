@@ -4,67 +4,8 @@ md_manager is a set of python functions and methods that provide easy acess and 
 ## AtomFrame
 The central piece of this project is the manipulation of atoms selection in the form of DataFrames provided by the pandas library. Currently, md_manager can handle pdb file format.
 
-### PDBfile methods:
-```python
-from md_manager import PDBfile
-```
-
-* `read2df` : Returns a pandas.DataFrame that contains all the atoms found in the PDB file.
-```python
-pdb = PDBfile(filename = "file.pdb")
-df  = pdb.read2df()
-```
-
-* `df2pdb` : Generates a PDB file from an inputed DataFrame.
-```python
-PDBfile.df2pdb(filename = "filename.pdb", df=df)
-```
-
-* `open` & `close` : Open/Close the pdb.file wrapper.
-```python
-pdb.open()
-for line in pdb.file:
-    #TODO
-pdb.close()
-```
-
-* `__len__`: Returns the number of frames in trajectory.
-```python
-model_number = len(pdb)
-``` 
-
-* Iterate over models using `__iter__` & `__next__`: Returns a pandas.DataFrame that corresponds to the next MODEL in PDB file.
-```python
-pdb.open()
-for id, df in enumerate(pdb):
-    # 'df' contains the atoms in MODEL n°id
-    #TODO
-pdb.close()
-```
-
-* With statments using `__enter__` & `__exit__` :
-```python
-with PDBfile("file.pdb") as pdb :
-    #pdb.file is open
-    #TODO
-#pdb.file is close
-```
-
-### Other functions related to DataFrames:
-```python
-import md_manager as md
-```
-* `atom_position` : Returns a numpy.ndarray that contains the [x, y, z] coordinates of the atoms in df.
-* `atom_mass` : Returns a numpy.ndarray that contains the masses of the atoms in df.
-* `atom_bfactors` : Returns a numpy.ndarray that contains the thermal B-factors of the atoms in df.
-```python
-position_array = md.atom_position(df)
-mass_array = md.atom_mass(df)
-bfact_array = md.atom_bfactors(df)
-```
-
 ### DataFrame structure:
-Unless youre code specifically adds or remove columns in the DataFrames, the contains the following columns :
+Unless youre code specifically adds or remove columns in the DataFrames, they contains the following columns :
 * `record_name` : Is the atom in the ATOM/HETATM class.
 * `name` : Atom name in PDB file (caution: it's length is 4).
 * `alt` : Alternate location indicator.
@@ -82,68 +23,85 @@ Unless youre code specifically adds or remove columns in the DataFrames, the con
 * `q` : Atom's charge.
 * `m` : Atom's mass in gram per mole.
 
+To generate such DataFrame, you can use a pdb file on youre local machine using 
+```python
+df = md.pdb2df(filename = "file.pdb")
+```
+or load structure from the protein data bank base
+```python
+df = md.fetch_protein_data_bank(pdb_code = "8q89")
+```
+### DataFrame manipulation:
+Using DataFrames allow easier manipulation based on the [query](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.query.html) and [groupby](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.groupby.html) methods.
+
+
 ## Normal Mode Analysis:
 Normal Modes are extracted from the diagonalization of mass-weighted Hessian matricies. 
 Choosing a NMA model is equivalent to chose a way to build Hessians.
 
 ### Anisotropic Network Model:
 In the ANM, Hessians are computed based force constants that are identical for all connected nodes in the equivalent graph representation.
-The construction of such matrix is achieved by the function `md.ANM_hessian`. For code efficiancy, this version of `md_manager` needs the `scipy.spatial.distance_matrix` function to compute the distance inter-nodes.
+The construction of such matrix is achieved by the function `md.NMA.ANM_hessian`. 
 
 ```python
-import md_manager as md
-import md_manager.NMA as nma
-from scipy.spatial import distance_matrix
+from md_manager import fetch_protein_data_bank
+from md_manager.NMA import *
 
-df = md.PDBfile("file.pdb").read2df()
-nodes_position = df[["x", "y", "z"]].to_numpy(dtype = float)
-nodes_mass = df.m.to_numpy(dtype = float)
-distance_inter_nodes = distance_matrix(nodes_position, nodes_position)
-
-H = nma.ANM_hessian(nodes_position=nodes_position, nodes_mass=nodes_mass, distance_inter_nodes=distance_inter_nodes, cutoff_radius=4.0, spring_constant=1.0)
+df = fetch_protein_data_bank("8q89")
+xyz = ["x", "y", "z"] # for column selection
+H = ANM_hessian(df[xyz], df.m, cutoff = 5.0, spring_constant = 1.0)
 ```
 ### Parameter-free Anisotropic Network Model :
-The ANM Hessian needs a cutoff radius that ensure that only 6 eigenvalues are null from the 3 global translations and 3 global rotations. For large number of nodes this can be problematic as it needs to perform a several diagonalization to tune the value of $r_c$. Introducing the pfANM Hessian allowing to consider interactions between all the nodes but scaling the force constant to the inversed square of the distance. The construction of such matrix is achieved by the function `NMA.pfANM_hessian`.
+The ANM Hessian needs a cutoff radius that ensure that only 6 eigenvalues are null from the 3 global translations and 3 global rotations. For large number of nodes this can be problematic as it needs to perform a several diagonalization to tune the value of $r_c$. Introducing the pfANM Hessian allowing to consider interactions between all the nodes but scaling the force constant to the inversed square of the distance. The construction of such matrix is achieved by the function `md.NMA.pfANM_hessian`.
 
 ```python
-import md_manager as md
-import md_manager.NMA as nma
-from scipy.spatial import distance_matrix
+from md_manager import fetch_protein_data_bank
+from md_manager.NMA import *
 
-df = md.PDBfile("file.pdb").read2df()
-nodes_position = df[["x", "y", "z"]].to_numpy(dtype = float)
-nodes_mass = df.m.to_numpy(dtype = float)
-distance_inter_nodes = distance_matrix(nodes_position, nodes_position)
-
-H = nma.pfANM_hessian(nodes_position=nodes_position, nodes_mass=nodes_mass, distance_inter_nodes=distance_inter_nodes, spring_constant=1.0)
+df = fetch_protein_data_bank("8q89")
+xyz = ["x", "y", "z"] # for column selection
+H = pfANM_hessian(df[xyz], df.m, spring_constant = 1.0)
 ```
 ### Normal Modes & Thermal B-factors:
-The normal modes are defined by the eigenvectors of the mass-weighted Hessian $\hat{H}\vec{e}_k = \tilde{\omega}^2_k\vec{e}_k$. As mensioned earlier, the 6 firsts modes should not be taken into account. The extraction of the modes is acieved by the function `NMA.collective_modes`. 
+The normal modes are defined by the eigenvectors of the mass-weighted Hessian $\hat{H}\vec{e}_k = \tilde{\omega}^2_k\vec{e}_k$. The 6 firsts modes should not be taken into account as related to global transitions / rotations of the structures. The extraction of the modes is acieved by the function `md.NMA.collective_modes`. 
 
-One of the useful metric that can be extracted from those modes is the Thermal B-factors of the nodes. The extraction of thermal B-factors is achieved with `NMA.local_MSF`. Finally the code bellow runs a Bfactor prediction and save it in a pdb file to allow easy vizualization.
+One of the useful metric that can be extracted from those modes is the Thermal B-factors of the nodes. The extraction of thermal B-factors is achieved with `md.NMA.local_MSF`. Finally the code bellow runs a Bfactor prediction and save it in a pdb file to allow easy vizualization.
 
 ```python
 import md_manager as md
-import md_manager.NMA as nma
-import pandas as pd
-from scipy.spatial import distance_matrix
+from md_manager.NMA import *
 
-# load structure
-df = md.PDBfile("file.pdb").read2df()
-nodes_position = df[["x", "y", "z"]].to_numpy(dtype = float)
-nodes_mass = df.m.to_numpy(dtype = float)
-distance_inter_nodes = distance_matrix(nodes_position, nodes_position)
+# Load structure
+df = md.fetch_protein_data_bank("8q89")
+xyz = ["x", "y", "z"] # for column selection
 
-# compute Hessian with appropriate model
-H = nma.pfANM_hessian(nodes_position=nodes_position, nodes_mass=nodes_mass, distance_inter_nodes=distance_inter_nodes, spring_constant=1.0)
+# Collective modes :
+H = pfANM_hessian(df[xyz], df.m, spring_constant = 1.0)
+eigenvals, eigenvecs = collective_modes(H)
 
-# compute normal modes & thermal factors
-eigenvalues, eigenvectors = nma.collective_modes(H)
-B = nma.local_MSF(eigenvals=eigenvalues, eigenvecs=eigenvectors, nodes_mass=nodes_mass, convert2bfactors=True)
+# B-factors:
+bfactors = predicted_Bfactors(eigenvals, eigenvecs, df.m)
 
 # save prediction in pdb file:
-df.b = pd.Series(B, index=df.index)
-md.PDBfile.df2pdb(df=df, filename="out.pdb")
+df.b = pd.Series(b, index=df.index)
+md.df2pdb("8q89.pdb", df=df)
+```
+
+Alternatively, it is possible to use the following code:
+```python
+import md_manager as md
+from md_manager.NMA import *
+
+# Load structure
+df = md.fetch_protein_data_bank("8q89")
+xyz = ["x", "y", "z"] # for column selection
+
+# B-factors:
+bfactors = predicted_Bfactors(df=df)
+
+# save prediction in pdb file:
+df.b = pd.Series(b, index=df.index)
+md.df2pdb("8q89.pdb", df=df)
 ```
 
 ### 1D Graph representation:
