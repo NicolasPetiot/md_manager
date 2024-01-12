@@ -1,4 +1,4 @@
-from ._params import DF_COLUMNS, ATOMIC_MASSES
+from ._params import DF_COLUMNS, ATOMIC_MASSES, STRING_FORMAT
 import pandas as pd
 
 ### NOT imported in md_manager ###
@@ -59,24 +59,7 @@ def _generate_pdb_line(atom:pd.Series, id:int) -> str:
     Generates a pdb line from an input series that contains atom's information.
     """
     # extract strings :
-    record_name = "%-6s"%atom["record_name"]
-    name        = " %-3s"%atom["name"]
-    alt         = "%1s"%atom["alt"]
-    resn        = "%3s"%atom["resn"]
-    chain       = "%1s"%atom["chain"]
-    insertion   = "%1s"%atom["insertion"]
-    segi        = "%-4s"%atom["segi"]
-    elem        = "%2s"%atom["e"]
-    charge      = "%2s"%atom["q"]
-
-    # extract float/int
-    id    = f"{id:5d}"
-    resi  = f"{atom.resi:4d}"
-    x     = f"{atom.x:8.3f}"
-    y     = f"{atom.y:8.3f}"
-    z     = f"{atom.z:8.3f}"
-    occup = f"{atom.occupancy:6.2f}"
-    b     = f"{atom.b:6.2f}"
+    record_name, name, alt, resn, chain, resi, insertion, x, y, z, occup, b, segi, elem, charge = (STRING_FORMAT[col](atom[col]) for col in DF_COLUMNS[:-1])
 
     line = "%s%s%s%s%s %s%s%s   %s%s%s%s%s      %s%s%s\n"%(
         record_name, id, name, alt, resn, chain, resi, insertion, x, y, z, occup, b, segi, elem, charge
