@@ -58,12 +58,40 @@ def _generate_pdb_line(atom:pd.Series, id:int) -> str:
     """
     Generates a pdb line from an input series that contains atom's information.
     """
-    # extract strings :
-    record_name, name, alt, resn, chain, resi, insertion, x, y, z, occup, b, segi, elem, charge = (STRING_FORMAT[col](atom[col]) for col in DF_COLUMNS[:-1])
+    line = ""
+    col = DF_COLUMNS[0]
+    line += STRING_FORMAT[col](atom[col])
+    line += f"{id:5d}"
 
-    line = "%s%s%s%s%s %s%s%s   %s%s%s%s%s      %s%s%s\n"%(
-        record_name, id, name, alt, resn, chain, resi, insertion, x, y, z, occup, b, segi, elem, charge
-    )
+    # blank 1:
+    line += " "
+
+    for col in DF_COLUMNS[1:4]:
+        data = atom[col]
+        line += STRING_FORMAT[col](data)
+
+    # blank 2:
+    line += " "
+    
+    for col in DF_COLUMNS[4:7]:
+        data = atom[col]
+        line += STRING_FORMAT[col](data)
+
+    # blank 3:
+    line += 3*" "
+
+    for col in DF_COLUMNS[7:13]:
+        data = atom[col]
+        line += STRING_FORMAT[col](data)
+
+    # blank 4:
+    line += 7*" "
+
+    for col in DF_COLUMNS[13:-1]:
+        data = atom[col]
+        line += STRING_FORMAT[col](data)
+
+    line += "\n"
     return line
 
 def _generate_pdb_line_list(df:pd.DataFrame):
@@ -88,7 +116,7 @@ def _generate_pdb_line_list(df:pd.DataFrame):
     if df.q.isna().all():
         df["q"] = ""
     
-    APO = df[df.record_name == "ATOM  "]
+    APO = df[df.record_name == "ATOM"]
     for _, chain in APO.groupby(["chain"]):
         for _, atom in chain.iterrows():
             id += 1
