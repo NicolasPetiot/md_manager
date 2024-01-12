@@ -7,7 +7,8 @@ __all__ = [
     "DF_COLUMNS",
     "DF_TYPES",
     "ONE_LETTER_CODE",
-    #"THREE_LETTERS_CODE"
+    #"THREE_LETTERS_CODE",
+    "STRING_FORMAT",
 ]
 
 TEMPERATURE = 300.0          # K
@@ -15,16 +16,16 @@ BOLTZMANN   = 1.987204259e-3 # kcal/mol/K (see : 'https://en.wikipedia.org/wiki/
 AVOGADRO    = 6.02214076e23  # 1/mol      (see : 'https://en.wikipedia.org/wiki/Avogadro_constant')
 
 ATOMIC_MASSES = {
-    " H" :  1.0079,
-    " C" : 12.0107,
-    " N" : 14.0067,
-    " O" : 15.9994,
-    " S" : 32.0650,
+    "H" :  1.0079,
+    "C" : 12.0107,
+    "N" : 14.0067,
+    "O" : 15.9994,
+    "S" : 32.0650,
 
     "NA" : 22.9897, # Sodium
     "MG" : 24.3050, # Magnesium
     "CL" : 35.4530, # Chlorine
-    " K" : 39.0983, # Potassium
+    "K" : 39.0983, # Potassium
     "AR" : 39.9480, # Argon
     "CA" : 40.0780, # Calcium
     "CU" : 63.5460, # Copper
@@ -60,3 +61,20 @@ ATOM_NAME_SELECTION_CHI = {
 
 DF_COLUMNS = ["record_name", "name", "alt", "resn", "chain", "resi", "insertion", "x", "y", "z", "occupancy", "b", "segi", "e", "q", "m"]
 DF_TYPES   = [str, str, str, str, str, int, str, float, float, float, float, float, str, str, str, float]
+STRING_FORMAT = {
+    "record_name" : lambda x : f"{x:<6s}",
+    "name"        : lambda x : f" {x:<3s}" if len(x) < 4 else f"{x:4s}",
+    "alt"         : lambda x : f"{x:1s}",
+    "resn"        : lambda x : f"{x:3s}",
+    "chain"       : lambda x : f"{x:1s}",
+    "resi"        : lambda x : f"{x:4d}",
+    "insertion"   : lambda x : f"{x:1s}",
+    "x"           : lambda x : f"{x:8.3f}",
+    "y"           : lambda x : f"{x:8.3f}",
+    "z"           : lambda x : f"{x:8.3f}",
+    "occupancy"   : lambda x : f"{x:6.2f}",
+    "b"           : lambda x : f"{x:6.2f}",
+    "segi"        : lambda x : f"{x:<3s}",
+    "e"           : lambda x : f"{x:2s}",
+    "q"           : lambda x : f"{x:2s}"
+}

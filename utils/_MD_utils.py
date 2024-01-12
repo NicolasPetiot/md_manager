@@ -1,8 +1,14 @@
-import pandas as pd
-import sys
-from urllib.request import urlopen
 from ._PDBfile_utils import _build_df_from_atom_list, _scan_pdb_line
 from .._PDBfile import PDBfile
+
+import numpy as np
+import pandas as pd
+import networkx as nx
+from scipy.spatial import distance_matrix
+
+import sys
+from urllib.request import urlopen
+
 
 
 ### IMPORTED IN md_manager ###
@@ -10,7 +16,9 @@ __all__ = [
     "fetch_protein_data_bank",
     "pdb2df",
     "df2pdb",
-    "df2com"
+    "df2com",
+    "pdb2graph",
+    "df2graph"
 ]
 
 def fetch_protein_data_bank(pdb_code:str)->pd.DataFrame:
@@ -30,12 +38,14 @@ def fetch_protein_data_bank(pdb_code:str)->pd.DataFrame:
 
     return _build_df_from_atom_list(atoms)
 
-def pdb2df(filename:str) -> pd.DataFrame:
+def pdb2df(filename:str, atom_only = False) -> pd.DataFrame:
     """
     Read all the atoms in an input PDB file [filename] and returns the associated DataFrame.
     """
     with PDBfile(filename) as pdb:
         df = pdb.read2df()
+    if atom_only:
+        df = df.query("record_name == 'ATOM  '")
     return df
 
 def df2pdb(filename:str, df:pd.DataFrame=None, dfs:list[pd.DataFrame] = None, title:str= None):
@@ -52,6 +62,7 @@ def df2pdb(filename:str, df:pd.DataFrame=None, dfs:list[pd.DataFrame] = None, ti
 
         else :
             pdb.write_pdb(df=df)
+   
 
 def df2com(df:pd.DataFrame, name = " XX ", element = " X", charge = "  "):
     """
@@ -79,3 +90,25 @@ def df2com(df:pd.DataFrame, name = " XX ", element = " X", charge = "  "):
         )
 
     return _build_df_from_atom_list(atoms=COM)
+
+def pdb2graph(filename:str, contact_threshold:float = 4.0) -> nx.Graph:
+    """
+    
+    """
+    df = pdb2df(filename)
+    return df2graph(df, contact_threshold)
+
+def df2graph(df:pd.DataFrame, contact_threshold = 4.0) -> nx.Graph:
+    """
+    
+    """
+    xyz = ["x", "y", "z"]
+    distance_inter_nodes = distance_matrix(df[xyz], df[xyz])
+    I, J = np.where(distance_inter_nodes < contact_threshold) 
+    I = df.iloc[I].index # atom index
+    J = df.iloc[J].index # atom index
+    edges = [(i, j) for i, j in zip(I, J) if i < j]
+
+    G = nx.Graph()
+    G.add_edges_from(edges)
+    return G
