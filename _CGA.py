@@ -48,26 +48,52 @@ def dihedral_angles(atom_position:np.ndarray) -> np.ndarray:
 def theta_angles(df:pd.DataFrame):
     """
     Returns a pandas.Series that contains theta angles associated to the chains in inputed df.
+
+    Caution, the method assumes all CA atoms to be consecutive except if they bellong to separated chains.
     """
+    CA = df.query("name == 'CA'")
     theta = []
-    for _, chain in df.query("name == ' CA '").groupby(["chain"]):
+    xyz = ["x", "y", "z"]
+    for _, chain in CA.groupby("chain"):
+        # first theta doesn't exists :
         theta.append(np.nan)
-        xyz = chain[["x", "y", "z"]].to_numpy(dtype=float)
-        theta += list(angles(xyz))
-        theta.append(np.nan)
-    return pd.Series(theta, index=df.index, name="theta")
+
+        atom_xyz = chain[xyz].to_numpy(dtype = float)
+        theta += list(
+            angles(atom_xyz)
+        )
+
+        # last theta doesn't exists :
+        theta.append(np.nan)       
+
+    s = pd.Series(index = df.index)
+    s[CA.index] = theta
+    return s
 
 def gamma_angles(df:pd.DataFrame):
     """
-    Returns a pandas.Series that contains the gamma angles associated to the chains in inputed df.
+    Returns a pandas.Series that contains gamma angles associated to the chains in inputed df.
+
+    Caution, the method assumes all CA atoms to be consecutive except if they bellong to separated chains.
     """
+    CA = df.query("name == 'CA'")
     gamma = []
-    for _, chain in df.query("name == ' CA '").groupby(["chain"]):
+    xyz = ["x", "y", "z"]
+    for _, chain in CA.groupby("chain"):
+        # first gamma doesn't exists :
         gamma.append(np.nan)
-        xyz = chain[["x", "y", "z"]].to_numpy(dtype=float)
-        gamma += list(dihedral_angles(xyz))
-        gamma.extend([np.nan, np.nan])
-    return pd.Series(gamma, index=df.index, name="gamma")
+
+        atom_xyz = chain[xyz].to_numpy(dtype = float)
+        gamma += list(
+            dihedral_angles(atom_xyz)
+        )
+
+        # 2 lasts gamma doesn't exists :
+        gamma.extend([np.nan, np.nan])       
+
+    s = pd.Series(index = df.index)
+    s[CA.index] = gamma
+    return s
 
 def chi_angles(df:pd.DataFrame):
     """
