@@ -38,18 +38,26 @@ class PDBfile:
 
         return len
     
-    def __enter__(self):
+    #def __enter__(self):
+    #    """
+    #    Called using `with md.pdb as pdb:` statment...
+    #    """
+    #    self.file = open(self.file.name, "r")
+    #    return self
+
+    #def __exit__(self, exc_type, exc_val, exc_tb):
+    #    """
+    #    Called at the end of a `with md.pdb as pdb:` statment...
+    #    """
+    #    self.file.close()
+
+    def __iter__(self):
         """
-        Called using `with md.pdb as pdb:` statment...
+        Initialize the iteration
         """
-        self.file = open(self.file.name, "r")
+        self.open()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """
-        Called at the end of a `with md.pdb as pdb:` statment...
-        """
-        self.file.close()
 
     def __next__(self):
         """
@@ -69,7 +77,8 @@ class PDBfile:
             # append atoms with potential new informations
             if line[:6] in {"ATOM  ", "HETATM"}:
                 atoms.append(_scan_pdb_line(line))
-            
+        
+        self.close()
         raise StopIteration
     
     def open(self):

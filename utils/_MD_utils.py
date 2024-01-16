@@ -42,10 +42,16 @@ def pdb2df(filename:str, atom_only = False) -> pd.DataFrame:
     """
     Read all the atoms in an input PDB file [filename] and returns the associated DataFrame.
     """
-    with PDBfile(filename) as pdb:
-        df = pdb.read2df()
+    # reading :
+    pdb = PDBfile(filename)
+    pdb.open()
+    df = pdb.read2df()
+    pdb.close()
+
+    # query :
     if atom_only:
-        df = df.query("record_name == 'ATOM  '")
+        df = df.query("record_name == 'ATOM'")
+
     return df
 
 def df2pdb(filename:str, df:pd.DataFrame=None, dfs:list[pd.DataFrame] = None, title:str= None):
@@ -56,12 +62,13 @@ def df2pdb(filename:str, df:pd.DataFrame=None, dfs:list[pd.DataFrame] = None, ti
     if type(df) == NoneType and type(dfs) == NoneType:
         raise ValueError("Please enter an input df/dfs")
     
-    with PDBfile(filename, write=True) as pdb:
-        if type(dfs) != NoneType:
-            pdb.write_pdb(dfs=dfs)
+    
+    pdb = PDBfile(filename, write=True)
+    if type(dfs) != NoneType:
+        pdb.write_pdb(dfs=dfs)
 
-        else :
-            pdb.write_pdb(df=df)
+    else :
+        pdb.write_pdb(df=df)
    
 
 def df2com(df:pd.DataFrame, name = " XX ", element = " X", charge = "  "):
