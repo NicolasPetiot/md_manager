@@ -37,30 +37,32 @@ ONE_LETTER_CODE ={'VAL':'V', 'ILE':'I', 'LEU':'L', 'GLU':'E', 'GLN':'Q',
 'GLY':'G', 'PRO':'P', 'CYS':'C'}
 
 ATOM_NAME_SELECTION_CHI = {
-    "ALA" : [" CA "],
-    "ARG" : [" N  ", " CA ", " CB ", " CG ", " CD ", " NE ", " CZ ", " NH1"],
-    "ASN" : [" N  ", " CA ", " CB ", " CG ", " OD1"],
-    "ASP" : [" N  ", " CA ", " CB ", " CG ", " OD1"],
-    "CYS" : [" N  ", " CA ", " CB ", " SG "],
-    "GLN" : [" N  ", " CA ", " CB ", " CG ", " CD ", " OE1"],
-    "GLU" : [" N  ", " CA ", " CB ", " CG ", " CD ", " OE1"],
-    "GLY" : [" CA "],
-    "HIS" : [" N  ", " CA ", " CB ", " CG ", " ND1"],
-    "ILE" : [" N  ", " CA ", " CB ", " CG1", " CD "],
-    "LEU" : [" N  ", " CA ", " CB ", " CG ", " CD1"],
-    "LYS" : [" N  ", " CA ", " CB ", " CG ", " CD ", " CE ", " NZ "],
-    "MET" : [" N  ", " CA ", " CB ", " CG ", " SD ", " CE"],
-    "PHE" : [" N  ", " CA ", " CB ", " CG ", " CD1"],
-    "PRO" : [" N  ", " CA ", " CB ", " CG ", " CD "],
-    "SER" : [" N  ", " CA ", " CB ", " OG "],
-    "THR" : [" N  ", " CA ", " CB ", " OG1"],
-    "TRP" : [" N  ", " CA ", " CB ", " CG ", " CD1"],
-    "TYR" : [" N  ", " CA ", " CB ", " CG ", " CD1"],
-    "VAL" : [" N  ", " CA ", " CB ", " CG1"]
+    "ALA" : ["CA"],
+    "ARG" : ["N", "CA", "CB", "CG", "CD", "NE", "CZ", "NH1"],
+    "ASN" : ["N", "CA", "CB", "CG", "OD1"],
+    "ASP" : ["N", "CA", "CB", "CG", "OD1"],
+    "CYS" : ["N", "CA", "CB", "SG"],
+    "GLN" : ["N", "CA", "CB", "CG", "CD", "OE1"],
+    "GLU" : ["N", "CA", "CB", "CG", "CD", "OE1"],
+    "GLY" : ["CA"],
+    "HIS" : ["N", "CA", "CB", "CG", "ND1"],
+    "ILE" : ["N", "CA", "CB", "CG1", "CD1"],
+    "LEU" : ["N", "CA", "CB", "CG", "CD1"],
+    "LYS" : ["N", "CA", "CB", "CG", "CD", "CE", "NZ"],
+    "MET" : ["N", "CA", "CB", "CG", "SD", "CE"],
+    "PHE" : ["N", "CA", "CB", "CG", "CD1"],
+    "PRO" : ["N", "CA", "CB", "CG", "CD"],
+    "SER" : ["N", "CA", "CB", "OG"],
+    "THR" : ["N", "CA", "CB", "OG1"],
+    "TRP" : ["N", "CA", "CB", "CG", "CD1"],
+    "TYR" : ["N", "CA", "CB", "CG", "CD1"],
+    "VAL" : ["N", "CA", "CB", "CG1"]
 } # atoms used for computation of dihedral angles (see 'http://www.mlb.co.jp/linux/science/garlic/doc/commands/dihedrals.html')
 
 DF_COLUMNS = ["record_name", "name", "alt", "resn", "chain", "resi", "insertion", "x", "y", "z", "occupancy", "b", "segi", "e", "q", "m"]
-DF_TYPES   = [str, str, str, str, str, int, str, float, float, float, float, float, str, str, str, float]
+type_list   = [str, str, str, str, str, int, str, float, float, float, float, float, str, str, str, float]
+DF_TYPES = {col:_type for col, _type in zip(DF_COLUMNS, type_list)}
+
 STRING_FORMAT = {
     "record_name" : lambda x : f"{x:<6s}",
     "name"        : lambda x : f" {x:<3s}" if len(x) < 4 else f"{x:4s}",

@@ -1,4 +1,4 @@
-from ._params import DF_COLUMNS, ATOMIC_MASSES, STRING_FORMAT
+from ._params import DF_COLUMNS, DF_TYPES, ATOMIC_MASSES, STRING_FORMAT
 import pandas as pd
 
 ### NOT imported in md_manager ###
@@ -7,7 +7,7 @@ def _build_df_from_atom_list(atoms:list):
     Returns a pandas.DataFrame that contains the atoms in the input list.
     """
     columns=DF_COLUMNS
-    return pd.DataFrame(atoms, columns=columns)
+    return pd.DataFrame(atoms, columns=columns).astype(DF_TYPES)
 
 def _scan_pdb_line(line:str):
     """
