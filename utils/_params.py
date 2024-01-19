@@ -29,6 +29,8 @@ ATOMIC_MASSES = {
     "AR" : 39.9480, # Argon
     "CA" : 40.0780, # Calcium
     "CU" : 63.5460, # Copper
+
+    "" : 1.0, 
 } # g/mol (see 'https://www.lenntech.com/periodic/mass/atomic-mass.htm')
 
 ONE_LETTER_CODE ={'VAL':'V', 'ILE':'I', 'LEU':'L', 'GLU':'E', 'GLN':'Q',

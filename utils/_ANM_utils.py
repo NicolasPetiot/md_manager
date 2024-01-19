@@ -9,7 +9,7 @@ __all__ = [
     "_jit_local_MSF"
 ]
 
-@jit(nopython = True, cache = True)
+#@jit(nopython = True, cache = True)
 def _jit_ANM_hessian(nodes_position:np.ndarray, nodes_mass:np.ndarray, distance_inter_nodes:np.ndarray, spring_constant:float, cutoff_radius:float):
     """
     
@@ -21,18 +21,18 @@ def _jit_ANM_hessian(nodes_position:np.ndarray, nodes_mass:np.ndarray, distance_
     for i in range(Nnodes):
         Ri = nodes_position[i, :]
         Mi = nodes_mass[i]
-        for j in range(1, Nnodes):
+        for j in range(i+1, Nnodes):
             if distance_inter_nodes[i, j] < cutoff_radius:
                 Rj = nodes_position[j, :]
                 Mj = nodes_mass[j]
 
                 Hij = _jit_Hij(coordI=Ri, coordJ=Rj)
-                Hij = -Hij / distance_inter_nodes[i, j]**2 / np.sqrt(Mi*Mj)
+                Hij = -Hij / distance_inter_nodes[i, j]**2 
 
-                hessian[3*i:3*(i+1), 3*j:3*(j+1)] = Hij
-                hessian[3*j:3*(j+1), 3*i:3*(i+1)] = Hij
-                hessian[3*i:3*(i+1), 3*i:3*(i+1)] -= Hij
-                hessian[3*j:3*(j+1), 3*j:3*(j+1)] -= Hij
+                hessian[3*i:3*(i+1), 3*j:3*(j+1)] = Hij / np.sqrt(Mi*Mj)
+                hessian[3*j:3*(j+1), 3*i:3*(i+1)] = Hij / np.sqrt(Mi*Mj)
+                hessian[3*i:3*(i+1), 3*i:3*(i+1)] -= Hij / Mi
+                hessian[3*j:3*(j+1), 3*j:3*(j+1)] -= Hij / Mj
     
     return spring_constant * hessian
 
@@ -53,12 +53,12 @@ def _jit_pfANM_hessian(nodes_position:np.ndarray, nodes_mass:np.ndarray, distanc
             Mj = nodes_mass[j]
 
             Hij = _jit_Hij(coordI=Ri, coordJ=Rj)
-            Hij = -Hij / distance_inter_nodes[i, j]**4 / np.sqrt(Mi*Mj)
+            Hij = -Hij / distance_inter_nodes[i, j]**4 
 
-            hessian[3*i:3*(i+1), 3*j:3*(j+1)] = Hij
-            hessian[3*j:3*(j+1), 3*i:3*(i+1)] = Hij
-            hessian[3*i:3*(i+1), 3*i:3*(i+1)] -= Hij
-            hessian[3*j:3*(j+1), 3*j:3*(j+1)] -= Hij
+            hessian[3*i:3*(i+1), 3*j:3*(j+1)] = Hij / np.sqrt(Mi*Mj)
+            hessian[3*j:3*(j+1), 3*i:3*(i+1)] = Hij / np.sqrt(Mi*Mj)
+            hessian[3*i:3*(i+1), 3*i:3*(i+1)] -= Hij / Mi
+            hessian[3*j:3*(j+1), 3*j:3*(j+1)] -= Hij / Mj
     
     return spring_constant * hessian
 

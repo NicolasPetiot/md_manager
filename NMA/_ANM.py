@@ -17,11 +17,12 @@ def ANM_hessian(nodes_position = None, nodes_mass = None, df = None, distance_in
     """
     
     """
-    if df != None:
+    NoneType = type(None)
+    if type(df) != NoneType:
         nodes_position = df[["x", "y", "z"]].to_numpy(dtype = float)
         nodes_mass = df.m.to_numpy(dtype = float)
 
-    elif nodes_position == None or nodes_mass == None:
+    elif type(nodes_position) == NoneType or type(nodes_mass) == NoneType:
         raise ValueError("`nodes_position` and/or `nodes_mass` are NoneType.")
     
     if type(nodes_position) != np.ndarray:
@@ -30,7 +31,7 @@ def ANM_hessian(nodes_position = None, nodes_mass = None, df = None, distance_in
     if type(nodes_mass) != np.ndarray:
         nodes_mass = np.array(nodes_mass, dtype=float)
     
-    if distance_inter_nodes == None:
+    if type(distance_inter_nodes) == NoneType:
         distance_inter_nodes = distance_matrix(nodes_position, nodes_position)
 
     return _jit_ANM_hessian(nodes_position, nodes_mass, distance_inter_nodes, spring_constant, cutoff_radius)
