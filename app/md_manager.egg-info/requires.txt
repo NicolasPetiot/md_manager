@@ -1,0 +1,8 @@
+pandas
+numpy
+numba
+scipy
+networkx
+
+[dev]
+twine>=4.0.2

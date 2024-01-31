@@ -1,6 +1,0 @@
-networkx @ file:///opt/conda/conda-bld/networkx_1647437648384/work
-numba @ file:///opt/conda/conda-bld/numba_1648040517072/work
-numpy @ file:///tmp/build/80754af9/numpy_and_numpy_base_1649764630438/work
-pandas==1.4.2
-retworkx==0.12.1
-scipy @ file:///tmp/build/80754af9/scipy_1641555004408/work
