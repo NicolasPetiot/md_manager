@@ -6,10 +6,68 @@ from .utils._params import ATOM_NAME_SELECTION_CHI
 __all__ = [
     "angles",
     "dihedral_angles",
+    "chain_theta_angles",
+    "chain_gamma_angles",
+    "residue_chi_angles",
+    ### to be removed ###
     "theta_angles",
     "gamma_angles",
     "chi_angles"
 ]
+
+def chain_theta_angles(chain:pd.DataFrame) -> pd.Series:
+    """
+    Returns a pandas.Series that contains the computed Theta angles of the input chain. The series index is the `resi` number 
+    and the associated value is the computed theta angles formed by the surounding "CA" atoms.
+
+    Can be used as `frame.groupby(...).apply(chain_theta_angles)` for multimers.
+
+    CAUTION : This methods will NOT returns an error if two residue index are not consecutive. Please make sure to avoid missing residues in the `chain` DataFrame.
+    """
+    xyz = ["x", "y", "z"]
+
+    atm_selection = ["CA"]
+    chain = chain.query("name in @atm_selection")
+    thetas = angles(chain[xyz].to_numpy())
+
+    s = pd.Series(index = chain.resi, name = "Theta")
+    s[s.index[1:-1]] = thetas
+    return s
+
+def chain_gamma_angles(chain:pd.DataFrame) -> pd.Series:
+    """
+    Returns a pandas.Series that contains the computed Gamma angles of the input chain. The series index is the `resi` number 
+    and the associated value is the computed gamma angles formed by the surounding "CA" atoms.
+
+    Can be used as `frame.groupby(...).apply(chain_gamma_angles)` for multimers.
+
+    CAUTION : This methods will NOT returns an error if two residue index are not consecutive. Please make sure to avoid missing residues in the `chain` DataFrame.
+    """
+    xyz = ["x", "y", "z"]
+
+    atm_selection = ["CA"]
+    chain = chain.query("name in @atm_selection")
+    gammas = dihedral_angles(chain[xyz].to_numpy())
+
+    s = pd.Series(index = chain.resi, name = "Theta")
+    s[s.index[1:-2]] = gammas
+    return s
+
+def residue_chi_angles(res:pd.DataFrame) -> pd.Series:
+    """
+    Returns a pandas.Series that contains the computed Chi angles of the input residue. The series index in the 'ChiN' identifier 
+    and the associated value is the computed chi angle formed by the surounding atoms.
+
+    Can be used as `frame.groupby(...).apply(residue_chi_angles)`.
+    """
+    xyz = ["x", "y", "z"]
+
+    atm_selection = ATOM_NAME_SELECTION_CHI[res.resn.unique()[0]]
+    res = res.query("name in @atm_selection")
+    chis = dihedral_angles(res[xyz].to_numpy())
+    chis = [chi for chi in chis] + [np.nan for _ in range(5 - len(chis))]
+    
+    return pd.Series(chis, index=["Chi%d"%i for i in range(1, 6)])
 
 def angles(atom_position:np.ndarray) -> np.ndarray:
     """
@@ -45,6 +103,7 @@ def dihedral_angles(atom_position:np.ndarray) -> np.ndarray:
 
     return np.rad2deg(np.arctan2(sin, cos))
 
+### To be removed ###
 def theta_angles(df:pd.DataFrame):
     """
     Returns a pandas.Series that contains theta angles associated to the chains in inputed df.
