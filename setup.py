@@ -10,21 +10,23 @@ setup(
     package_dir={"":"app"},
     packages=find_packages(where="app"),
     long_description=doc,
-    long_description_type="text/markdown",
+    #long_description_type="text/markdown",
     url="https://github.com/NicolasPetiot/md_manager",
     author="NicolasPetiot",
     author_email="nicolaspetiot2710@hotmail.fr",
-    license="",
-    classifiers=[],
+    #license="",
+    #classifiers=[],
     install_requires=[
-        "pandas",
-        "numpy",
-        "numba",
-        "scipy",
-        "networkx"
+        "pandas >= 2.1.1",
+        "numpy >= 1.26.2",
+        "numba >= 0.58.1",
+        "scipy >= 1.11.4",
+        "networkx >= 3.1"
     ],
     extras_require={
         "dev": ["twine>=4.0.2"]
-    }
+    },
+    python_requires="<3.12"
+
 )
 

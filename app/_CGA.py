@@ -20,7 +20,7 @@ def chain_theta_angles(chain:pd.DataFrame) -> pd.Series:
     Returns a pandas.Series that contains the computed Theta angles of the input chain. The series index is the `resi` number 
     and the associated value is the computed theta angles formed by the surounding "CA" atoms.
 
-    Can be used as `frame.groupby(...).apply(chain_theta_angles)` for multimers.
+    Can be used as `frame.groupby(...)[["name", "resi", "x", "y", "z"]].apply(chain_theta_angles)` for multimers.
 
     CAUTION : This methods will NOT returns an error if two residue index are not consecutive. Please make sure to avoid missing residues in the `chain` DataFrame.
     """
@@ -39,7 +39,7 @@ def chain_gamma_angles(chain:pd.DataFrame) -> pd.Series:
     Returns a pandas.Series that contains the computed Gamma angles of the input chain. The series index is the `resi` number 
     and the associated value is the computed gamma angles formed by the surounding "CA" atoms.
 
-    Can be used as `frame.groupby(...).apply(chain_gamma_angles)` for multimers.
+    Can be used as `frame.groupby(...)[["name", "resi", "x", "y", "z"]].apply(chain_gamma_angles)` for multimers.
 
     CAUTION : This methods will NOT returns an error if two residue index are not consecutive. Please make sure to avoid missing residues in the `chain` DataFrame.
     """
@@ -58,7 +58,7 @@ def residue_chi_angles(res:pd.DataFrame) -> pd.Series:
     Returns a pandas.Series that contains the computed Chi angles of the input residue. The series index in the 'ChiN' identifier 
     and the associated value is the computed chi angle formed by the surounding atoms.
 
-    Can be used as `frame.groupby(...).apply(residue_chi_angles)`.
+    Can be used as `frame.groupby(...)[["name", "resn", "x", "y", "z"]].apply(residue_chi_angles)`.
     """
     xyz = ["x", "y", "z"]
 
