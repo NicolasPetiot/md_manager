@@ -1,13 +1,13 @@
 # MD-manager
-md_manager is a set of python functions and methods that provide easy acess and manipulation of data for molecular dynamics simulations. It is developped in the research group of Physics Applied to Proteins in the université de bougrogne. 
+md_manager is a set of python functions and methods that provide easy acess and manipulation of data for molecular dynamics simulations. It is developped in the research group of Physics Applied to Proteins at _université de bougrogne_. 
 
 ## AtomFrame
 The central piece of this project is the manipulation of atoms selection in the form of DataFrames provided by the pandas library. Currently, md_manager can handle pdb file format.
 
 ### DataFrame structure:
-Unless youre code specifically adds or remove columns in the DataFrames, they contains the following columns :
-* `record_name` : Is the atom in the ATOM/HETATM class.
-* `name` : Atom name in PDB file (caution: it's length is 4).
+Unless youre code specifically adds, remove or rename columns in the DataFrames, they contains the following columns :
+* `record_name` : Can be in the ATOM/HETATM class.
+* `name` : Atom name in PDB file.
 * `alt` : Alternate location indicator.
 * `resn` : Residue name (coded with 3 letters).
 * `chain` : Chain indicator.
@@ -17,7 +17,7 @@ Unless youre code specifically adds or remove columns in the DataFrames, they co
 * `y` : y coordinate in Angström
 * `z` : z coordinate in Angström
 * `occupancy` : occupancy usually measured in XRD. By default is set to `1.0`.
-* `b` : Thermal B-factors in squared Angström.
+* `b` : Thermal B-factors in squared Angström. By default is set to `1.0`.
 * `segi` : Segment identifier.
 * `e` : Element symbol. Used to determine the atomic mass.
 * `q` : Atom's charge.
@@ -31,8 +31,71 @@ or load structure from the protein data bank base
 ```python
 df = md.fetch_protein_data_bank(pdb_code = "8q89")
 ```
+
 ### DataFrame manipulation:
 Using DataFrames allow easier manipulation based on the [query](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.query.html) and [groupby](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.groupby.html) methods.
+
+## PDB object:
+
+MD-manager contains a `PDB` python class that is in charge of the interaction between DataFrames and text files. 
+
+### Reading files:
+
+The `pdb2df` method is meant to return the first model of a pdb file. For MD trajectories, the `PDB` class allow the following syntax
+
+```python
+import md_manager as md
+traj = md.PDB(filename="md_traj.pdb")
+for model in traj:
+    # TODO: add data processing here
+```
+
+or 
+
+```python
+import md_manager as md
+traj = md.PDB(filename="md_traj.pdb")
+traj = iter(traj)
+
+# initialization :
+frame = next(traj)
+# TODO: add initialization code here
+
+for frame in traj:
+    # TODO: add data processing here
+```
+
+**N.B.**: The `PDB.__next__()` method uses the "ENDMDL" record name to return the atoms in the DataFrame. If none of the lines starts with "ENDMDL", the DataFrame will contains all atoms in the input file.
+
+### Writing file:
+
+MD-manager allows to write pdb files as follows:
+
+```python
+import md_manager as md
+
+df = md.fetch_protein_data_bank("5f0g")
+
+# remove hetero atoms:
+df = df.query("record_name == 'ATOM'")
+
+# save to pdb format:
+new = md.PDB(filename="file.pdb", write=True)
+new.write(df)
+```
+
+Trajectories can be generated as well:
+
+```python
+import md_manager as md
+
+traj = md.PDB("full_traj.pdb")
+traj = iter(traj)
+
+# save 10 firsts models to pdb format:
+new = md.PDB(filename="sub_traj.pdb", write=True)
+new.write(dfs=[next(traj) for _ in range(10)]) # dfs is a list of DataFrames
+```
 
 
 ## Normal Mode Analysis:

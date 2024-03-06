@@ -1,5 +1,5 @@
-from ._PDBfile_utils import _build_df_from_atom_list, _scan_pdb_line
-from .._PDBfile import PDBfile
+from .._PDB import PDB
+from ._params import DF_COLUMNS
 
 import numpy as np
 import pandas as pd
@@ -34,41 +34,33 @@ def fetch_protein_data_bank(pdb_code:str)->pd.DataFrame:
     atoms = []
     for line in lines :
         if line[:6] in {"ATOM  ", "HETATM"}:
-            atoms.append(_scan_pdb_line(line))
+            atoms.append(PDB.scan_pdb_line(line))
 
-    return _build_df_from_atom_list(atoms)
+    return PDB.build_df_from_atoms(atoms)
 
 def pdb2df(filename:str, atom_only = False) -> pd.DataFrame:
     """
-    Read all the atoms in an input PDB file [filename] and returns the associated DataFrame.
+    Read all the atoms in the first frame of an input PDB file [filename] and returns the associated DataFrame.
     """
     # reading :
-    pdb = PDBfile(filename)
-    pdb.open()
-    df = pdb.read2df()
+    pdb   = PDB(filename)
+    frame = iter(pdb)
+    df    = next(frame)
     pdb.close()
 
     # query :
     if atom_only:
-        df = df.query("record_name == 'ATOM'")
+        query_string = f"{DF_COLUMNS[0]} == 'ATOM'"
+        df = df.query(query_string)
 
     return df
 
-def df2pdb(filename:str, df:pd.DataFrame=None, dfs:list[pd.DataFrame] = None, title:str= None):
+def df2pdb(filename:str, df:pd.DataFrame=None, dfs:list[pd.DataFrame] = None):
     """
     Read all the atoms in an input DataFrame [df / dfs] and generates the associated PDB file.
     """
-    NoneType = type(None)
-    if type(df) == NoneType and type(dfs) == NoneType:
-        raise ValueError("Please enter an input df/dfs")
-    
-    
-    pdb = PDBfile(filename, write=True)
-    if type(dfs) != NoneType:
-        pdb.write_pdb(dfs=dfs)
-
-    else :
-        pdb.write_pdb(df=df)
+    new = PDB(filename, write=True)
+    new.write(model=df, model_list=dfs)
    
 
 def df2com(df:pd.DataFrame, name = " XX ", element = " X", charge = "  "):
@@ -96,7 +88,7 @@ def df2com(df:pd.DataFrame, name = " XX ", element = " X", charge = "  "):
             [record_name, name, alt, resn, chain, resi, " ", X, Y, Z, 1.0, B, segi, element, charge, M]
         )
 
-    return _build_df_from_atom_list(atoms=COM)
+    return PDB.build_df_from_atom_list(atoms=COM)
 
 def pdb2graph(filename:str, contact_threshold:float = 4.0) -> nx.Graph:
     """

@@ -76,11 +76,11 @@ class PDB:
         lines = []
         model_id = 1
         if model is not None:
-            lines += self.generate_atom_lines(model, model_id)
+            lines += self.__generate_atom_lines(model, model_id)
 
         elif model_list is not None :
             for model in model_list:
-                lines += self.generate_atom_lines(model, model_id)
+                lines += self.__generate_atom_lines(model, model_id)
                 model_id += 1
 
         self.open("w")

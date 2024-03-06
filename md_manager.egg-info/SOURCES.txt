@@ -1,7 +1,7 @@
 README.md
 setup.py
 md_manager/_CGA.py
-md_manager/_PDBfile.py
+md_manager/_PDB.py
 md_manager/__init__.py
 md_manager.egg-info/PKG-INFO
 md_manager.egg-info/SOURCES.txt
@@ -15,6 +15,5 @@ md_manager/NMA/__init__.py
 md_manager/utils/_ANM_utils.py
 md_manager/utils/_Graph_utils.py
 md_manager/utils/_MD_utils.py
-md_manager/utils/_PDBfile_utils.py
 md_manager/utils/__init__.py
 md_manager/utils/_params.py
