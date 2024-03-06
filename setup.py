@@ -15,6 +15,6 @@ setup(
     url="https://github.com/NicolasPetiot/md_manager",
 
     author="NicolasPetiot",
-    author_email="nicolaspetiot2710@hotmail.fr",
+    author_email="NicolasPetiot01@u-bourgogne.fr",
 )
 

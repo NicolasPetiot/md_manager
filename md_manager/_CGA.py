@@ -30,7 +30,7 @@ def chain_theta_angles(chain:pd.DataFrame) -> pd.Series:
     chain = chain.query("name in @atm_selection")
     thetas = angles(chain[xyz].to_numpy())
 
-    s = pd.Series(index = chain.resi, name = "Theta")
+    s = pd.Series(index = chain.resi, name = "Theta", dtype = float)
     s[s.index[1:-1]] = thetas
     return s
 
@@ -49,7 +49,7 @@ def chain_gamma_angles(chain:pd.DataFrame) -> pd.Series:
     chain = chain.query("name in @atm_selection")
     gammas = dihedral_angles(chain[xyz].to_numpy())
 
-    s = pd.Series(index = chain.resi, name = "Theta")
+    s = pd.Series(index = chain.resi, name = "Gamma", dtype = float)
     s[s.index[1:-2]] = gammas
     return s
 
@@ -125,7 +125,7 @@ def theta_angles(df:pd.DataFrame):
         # last theta doesn't exists :
         theta.append(np.nan)       
 
-    s = pd.Series(index = df.index)
+    s = pd.Series(index = df.index, dtype = float)
     s[CA.index] = theta
     return s
 
@@ -150,7 +150,7 @@ def gamma_angles(df:pd.DataFrame):
         # 2 lasts gamma doesn't exists :
         gamma.extend([np.nan, np.nan])       
 
-    s = pd.Series(index = df.index)
+    s = pd.Series(index = df.index, dtype = float)
     s[CA.index] = gamma
     return s
 
