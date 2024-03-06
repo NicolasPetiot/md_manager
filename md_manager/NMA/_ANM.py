@@ -1,5 +1,5 @@
 from ..utils._ANM_utils import _jit_ANM_hessian, _jit_pfANM_hessian, _jit_local_MSF
-from .._PDBfile import PDBfile
+from ..utils._MD_utils import pdb2df
 
 import numpy as np
 import pandas as pd
@@ -75,7 +75,7 @@ def collective_modes(hessian):
 
 def predicted_Bfactors(
         eigenvals:np.ndarray=None, eigenvecs:np.ndarray=None, nodes_mass:np.ndarray = None,
-        hessian:np.ndarray=None, PDB:PDBfile = None, df:pd.DataFrame=None,
+        hessian:np.ndarray=None, pdb_name:str = None, df:pd.DataFrame=None,
         spring_constant=1.0, cutoff_radius=None, 
         convert2bfactors=True
     ):
@@ -96,10 +96,10 @@ def predicted_Bfactors(
     NoneType = type(None)
     if type(eigenvals) == NoneType or type(eigenvecs) == NoneType:
         if type(hessian) == NoneType:
-            if type(PDB)==NoneType:
+            if type(pdb_name)==NoneType:
                 raise ValueError("Not enougth information. Unable to compute collective modes.")
-            
-            df = PDB.read2df()
+            df = pdb2df(pdb_name)
+
             if type(cutoff_radius) == NoneType:
                 hessian = pfANM_hessian(df=df, spring_constant=spring_constant)
             else :
@@ -109,9 +109,9 @@ def predicted_Bfactors(
     # compute nodes mass if needed :
     if type(nodes_mass) == NoneType:
         if type(df) == NoneType :
-            if type(PDB) == NoneType:
+            if type(pdb_name) == NoneType:
                 raise ValueError("Not enougth information. Unable to compute nodes mass.")
-            df = PDB.read2df()
+            df = pdb2df(pdb_name)
         nodes_mass = df.m.to_numpy(dtype = float)
 
     else :

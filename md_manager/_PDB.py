@@ -21,6 +21,7 @@ class PDB:
                 raise e
         
         self.__is_open = False
+        self.__returned_once = False
             
     
     def open(self, mode = "r"):
@@ -43,6 +44,7 @@ class PDB:
         """
         if not self.__is_open:
             self.open()
+        self.__returned_once = False
 
         return self
     
@@ -51,18 +53,21 @@ class PDB:
         Iterates over the lines in the file and returns the DataFrame associated for each 'ENDMDL' in the file.
         """
         atoms = []
-        returned_once = False
+        
         for line in self.__file:
             if line.startswith("ENDMDL"):
-                returned_once = True
-                return self.__build_df_from_atoms(atoms)
+                self.__returned_once = True
+                return self.build_df_from_atoms(atoms)
             
             if line[:6] in {"ATOM  ", "HETATM"}:
-                atoms.append(self.__scan_pdb_line(line))
+                atoms.append(self.scan_pdb_line(line))
 
-        self.close()
-        if not returned_once:
-            return self.__build_df_from_atoms(atoms)
+        else :
+            if not self.__returned_once:
+                self.__returned_once = True
+                return self.build_df_from_atoms(atoms)
+            self.close()
+            raise StopIteration
     
     def write(self, model = None, model_list = None):
         """

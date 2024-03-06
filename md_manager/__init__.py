@@ -1,5 +1,5 @@
 from .utils._params import *
-from ._PDBfile import *
+from ._PDB import *
 from ._CGA import *
 from .utils._MD_utils import *
 
