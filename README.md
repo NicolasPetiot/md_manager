@@ -1,7 +1,16 @@
 # MD-manager
 md_manager is a set of python functions and methods that provide easy acess and manipulation of data for molecular dynamics simulations. It is developped in the research group of Physics Applied to Proteins at _université de bougrogne_. 
 
-## AtomFrame
+## Installation:
+
+As MD-manager is still in early stage of development, it is not yet available on the [pypi](https://pypi.org) code base. To download it use 
+```shell
+git clone https://github.com/NicolasPetiot/md_manager
+cd md_manager
+pip install .
+```
+
+## AtomFrame:
 The central piece of this project is the manipulation of atoms selection in the form of DataFrames provided by the pandas library. Currently, md_manager can handle pdb file format.
 
 ### DataFrame structure:
