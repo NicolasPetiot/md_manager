@@ -43,9 +43,9 @@ pdb = md.PDB("inputfile.pdb")
 
 args :
 
-- `filename:str` : File name or relative path of the pdb file to read/write.
+`filename:str` : File name or relative path of the pdb file to read/write.
 
-- `write:bool = False` : Allow the creation of a the file is file not found.
+`write:bool = False` : Allow the creation of a the file is file not found.
 
 * `__iter__` : Initialises the iteration over models.
 
@@ -53,7 +53,9 @@ args :
 
 * `open` : Set the I/O wrapper associated to the instance of PDB in open mode.
 
-args : `mode:str = "r"` I/O interation mode (read by default)
+args : 
+
+`mode:str = "r"` I/O interation mode (read by default)
 
 ```python
 pdb.open()
@@ -69,9 +71,9 @@ pdb.close()
 
 args : 
 
--  `model:DataFrame` : Single frame to be written in the output file.
+`model:DataFrame` : Single frame to be written in the output file.
 
-- `model_list:list[DataFrame]` : List of frames to be written in the output file.
+`model_list:list[DataFrame]` : List of frames to be written in the output file.
 
 ```python
 pdb.write(model=df)
@@ -81,7 +83,7 @@ pdb.write(model=df)
 
 args :
 
-- `atoms:list[tuple]` : List created from `scan_pdb_line` method.
+`atoms:list[tuple]` : List created from `scan_pdb_line` method.
 
 ```python
 df = PDB.build_df_from_atoms(atoms)
@@ -97,23 +99,23 @@ The mass is extracted from the `ATOMIC_MASSES` dictionary (see _params.py)
 
 args : 
 
-- `line:str` : Line of a pdb file that starts with "ATOM"/"HETATM"
+`line:str` : Line of a pdb file that starts with "ATOM"/"HETATM"
 
 * `generate_atom_line` : Generates a pdb line from an input Series that contains atom's information.
 
 args : 
 
-- `atom:Series` : Series associated to a line of a DataFrame.
+`atom:Series` : Series associated to a line of a DataFrame.
 
-- `atom_id:int` : Atom index in the pdb file.
+`atom_id:int` : Atom index in the pdb file.
 
 * `generate_atom_lines` : Generates a list of lines to be written in a pdb file from input DataFrame and model index.
 
 args :
 
-- `df:DataFrame` : DataFrame to convert in lines in pdb format.
+`df:DataFrame` : DataFrame to convert in lines in pdb format.
 
-- `model_id:int = 1` : Number of the model associated to the current frame.
+`model_id:int = 1` : Number of the model associated to the current frame.
 
 ### DataFrame manipulation:
 Using DataFrames allow easier manipulation based on the [query](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.query.html) and [groupby](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.groupby.html) methods.
