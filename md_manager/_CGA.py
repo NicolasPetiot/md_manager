@@ -15,38 +15,46 @@ __all__ = [
     "chi_angles"
 ]
 
-def chain_theta_angles(chain:pd.DataFrame) -> pd.Series:
+def chain_theta_angles(chain:pd.DataFrame, CA_only = True) -> pd.Series:
     """
     Returns a pandas.Series that contains the computed Theta angles of the input chain. The series index is the `resi` number 
     and the associated value is the computed theta angles formed by the surounding "CA" atoms.
 
     Can be used as `frame.groupby(...)[["name", "resi", "x", "y", "z"]].apply(chain_theta_angles)` for multimers.
 
+    By default, the method considers that the input chain contains only 'CA' atoms. To apply query methods, please set `CA_only=False`.
+
     CAUTION : This methods will NOT returns an error if two residue index are not consecutive. Please make sure to avoid missing residues in the `chain` DataFrame.
     """
     xyz = ["x", "y", "z"]
 
-    atm_selection = ["CA"]
-    chain = chain.query("name in @atm_selection")
+    if not CA_only:
+        atm_selection = ["CA"]
+        chain = chain.query("name in @atm_selection")
+
     thetas = angles(chain[xyz].to_numpy())
 
     s = pd.Series(index = chain.resi, name = "Theta", dtype = float)
     s[s.index[1:-1]] = thetas
     return s
 
-def chain_gamma_angles(chain:pd.DataFrame) -> pd.Series:
+def chain_gamma_angles(chain:pd.DataFrame, CA_only = True) -> pd.Series:
     """
     Returns a pandas.Series that contains the computed Gamma angles of the input chain. The series index is the `resi` number 
     and the associated value is the computed gamma angles formed by the surounding "CA" atoms.
 
     Can be used as `frame.groupby(...)[["name", "resi", "x", "y", "z"]].apply(chain_gamma_angles)` for multimers.
 
+    By default, the method considers that the input chain contains only 'CA' atoms. To apply query methods, please set `CA_only=False`.
+
     CAUTION : This methods will NOT returns an error if two residue index are not consecutive. Please make sure to avoid missing residues in the `chain` DataFrame.
     """
     xyz = ["x", "y", "z"]
 
-    atm_selection = ["CA"]
-    chain = chain.query("name in @atm_selection")
+    if not CA_only:
+        atm_selection = ["CA"]
+        chain = chain.query("name in @atm_selection")
+        
     gammas = dihedral_angles(chain[xyz].to_numpy())
 
     s = pd.Series(index = chain.resi, name = "Gamma", dtype = float)
