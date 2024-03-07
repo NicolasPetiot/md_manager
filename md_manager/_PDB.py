@@ -7,6 +7,15 @@ class PDB:
     
     """
     def __init__(self, filename:str, write=False) -> None:
+        """
+        Creates an instance of the `PDB` class.
+
+        args :
+
+        - `filename:str` : File name or relative path of the pdb file to read/write.
+
+        - `write:bool = False` : Allow the creation of a the file is file not found.
+        """
         # Open filename
         try :
             self.__file = open(filename, "r")
@@ -22,25 +31,10 @@ class PDB:
         
         self.__is_open = False
         self.__returned_once = False
-            
-    
-    def open(self, mode = "r"):
-        """
-        
-        """
-        self.__file = open(self.__file.name, mode)
-        self.__is_open = True
-    
-    def close(self):
-        """
-        
-        """
-        self.__file.close()
-        self.__is_open = False
 
     def __iter__(self):
         """
-        Initialises the iterator object.
+        Initialises the iteration over models.
         """
         if not self.__is_open:
             self.open()
@@ -68,10 +62,33 @@ class PDB:
                 return self.build_df_from_atoms(atoms)
             self.close()
             raise StopIteration
+            
+    
+    def open(self, mode = "r"):
+        """
+        Set the I/O wrapper associated to the instance of PDB in open mode.
+
+        args : `mode:str = "r"` I/O interation mode (read by default)
+        """
+        self.__file = open(self.__file.name, mode)
+        self.__is_open = True
+    
+    def close(self):
+        """
+        Set the I/O wrapper associated to the instance of PDB in close mode.
+        """
+        self.__file.close()
+        self.__is_open = False
     
     def write(self, model = None, model_list = None):
         """
-        
+        Read the input DataFrame(s) and creates the associated pdb file.
+
+        args : 
+
+        -  `model:DataFrame` : Single frame to be written in the output file.
+
+        - `model_list:list[DataFrame]` : List of frames to be written in the output file.
         """
         lines = []
         model_id = 1
@@ -91,7 +108,11 @@ class PDB:
     @staticmethod
     def build_df_from_atoms(atoms) -> DataFrame:
         """
-        Creates the DataFrame with expected column names and types.
+        Creates the DataFrame associated to input `atoms` with expected column names and types.
+
+        args :
+
+        - `atoms:list[tuple]` : List created from `scan_pdb_line` method.
         """
         return DataFrame(atoms, columns=DF_COLUMNS).astype(DF_TYPES)
     
@@ -105,7 +126,11 @@ class PDB:
 
         By default, the Bfactors are set to 0.0 AA².
 
-        The mass is extracted from the md.ATOMIC_MASSES dictionary (see _params.py)
+        The mass is extracted from the `ATOMIC_MASSES` dictionary (see _params.py)
+        
+        args : 
+
+        - `line:str` : Line of a pdb file that starts with "ATOM"/"HETATM"
         """
         if line.startswith("ATOM"):
             record_name = "ATOM"
@@ -145,6 +170,12 @@ class PDB:
     def generate_atom_line(atom:Series, atom_id:int) -> str:
         """
         Generates a pdb line from an input series that contains atom's information.
+        
+        args : 
+
+        - `atom:Series` : Series associated to a line of a DataFrame.
+
+        - `atom_id:int` : Atom index in the pdb file.
         """
         line = ""
         col = DF_COLUMNS[0]
@@ -182,9 +213,15 @@ class PDB:
         return line + "\n"
     
     @classmethod
-    def generate_atom_lines(cls, df:DataFrame, model_id = 1):
+    def generate_atom_lines(cls, df:DataFrame, model_id:int = 1) -> list[str]:
         """
-        
+        Generates a list of lines to be written in a pdb file from input DataFrame and model index.
+
+        args :
+
+        - `df:DataFrame` : DataFrame to convert in lines in pdb format.
+
+        - `model_id:int = 1` : Number of the model associated to the current frame.
         """
         lines = [f"MODEL{model_id:8d}\n"]
         # split atoms and hetero atoms :

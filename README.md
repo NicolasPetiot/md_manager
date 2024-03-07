@@ -10,11 +10,11 @@ cd md_manager
 pip install .
 ```
 
-## AtomFrame:
-The central piece of this project is the manipulation of atoms selection in the form of DataFrames provided by the pandas library. Currently, md_manager can handle pdb file format.
+## PDB class:
 
-### DataFrame structure:
-Unless youre code specifically adds, remove or rename columns in the DataFrames, they contains the following columns :
+A python class that provide methods to read and write pdb files.
+
+Unless your code specifically adds, remove or rename columns in the DataFrames, they contains the following columns :
 * `record_name` : Can be in the ATOM/HETATM class.
 * `name` : Atom name in PDB file.
 * `alt` : Alternate location indicator.
@@ -32,14 +32,88 @@ Unless youre code specifically adds, remove or rename columns in the DataFrames,
 * `q` : Atom's charge.
 * `m` : Atom's mass in gram per mole.
 
-To generate such DataFrame, you can use a pdb file on youre local machine using 
 ```python
-df = md.pdb2df(filename = "file.pdb")
+import md_manager as md
+pdb = md.PDB("inputfile.pdb")
 ```
-or load structure from the protein data bank base
+
+### Methods :
+
+* `__init__` : Creates an instance of the `PDB` class.
+
+args :
+
+- `filename:str` : File name or relative path of the pdb file to read/write.
+
+- `write:bool = False` : Allow the creation of a the file is file not found.
+
+* `__iter__` : Initialises the iteration over models.
+
+* `__next__` : Iterates over the lines in the file and returns the DataFrame associated for each 'ENDMDL' in the file.
+
+* `open` : Set the I/O wrapper associated to the instance of PDB in open mode.
+
+args : `mode:str = "r"` I/O interation mode (read by default)
+
 ```python
-df = md.fetch_protein_data_bank(pdb_code = "8q89")
+pdb.open()
 ```
+
+* `close` : Set the I/O wrapper associated to the instance of PDB in close mode.
+
+```python
+pdb.close()
+```
+
+* `write` : Read the input DataFrame(s) and creates the associated pdb file.
+
+args : 
+
+-  `model:DataFrame` : Single frame to be written in the output file.
+
+- `model_list:list[DataFrame]` : List of frames to be written in the output file.
+
+```python
+pdb.write(model=df)
+```
+
+* `build_df_from_atoms` : Creates the DataFrame associated to input `atoms` with expected column names and types.
+
+args :
+
+- `atoms:list[tuple]` : List created from `scan_pdb_line` method.
+
+```python
+df = PDB.build_df_from_atoms(atoms)
+```
+
+* `scan_pdb_line` : Returns a tuple that contains the (record_name, name, alt, resn, chain, resi, insertion, x, y, z, occupancy, b, segi, elem, charge, mass) informations about an atom line in the PDB file.
+
+By default,  the occupancy is set to 1.0.
+
+By default, the Bfactors are set to 0.0 AA².
+
+The mass is extracted from the `ATOMIC_MASSES` dictionary (see _params.py)
+
+args : 
+
+- `line:str` : Line of a pdb file that starts with "ATOM"/"HETATM"
+
+* `generate_atom_line` : Generates a pdb line from an input Series that contains atom's information.
+
+args : 
+
+- `atom:Series` : Series associated to a line of a DataFrame.
+
+- `atom_id:int` : Atom index in the pdb file.
+
+* `generate_atom_lines` : Generates a list of lines to be written in a pdb file from input DataFrame and model index.
+
+args :
+
+- `df:DataFrame` : DataFrame to convert in lines in pdb format.
+
+- `model_id:int = 1` : Number of the model associated to the current frame.
 
 ### DataFrame manipulation:
 Using DataFrames allow easier manipulation based on the [query](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.query.html) and [groupby](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.groupby.html) methods.
@@ -106,6 +180,22 @@ new = md.PDB(filename="sub_traj.pdb", write=True)
 new.write(dfs=[next(traj) for _ in range(10)]) # dfs is a list of DataFrames
 ```
 
+## Conformational Angles:
+
+MD-manager contains methods that allow to compute conformational angles for proteins. 
+
+```python
+import md_manager as md
+import numpy as np
+
+xyz = np.array([
+    [0, 0, 0],
+    [0, 0, 1],
+    [0, 1, 1],
+    [1, 1, 1]
+])
+thetas = md.angles(xyz)
+```
 
 ## Normal Mode Analysis:
 Normal Modes are extracted from the diagonalization of mass-weighted Hessian matricies. 
