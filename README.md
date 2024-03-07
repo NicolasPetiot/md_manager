@@ -32,12 +32,12 @@ Unless your code specifically adds, remove or rename columns in the DataFrames, 
 * `q` : Atom's charge.
 * `m` : Atom's mass in gram per mole.
 
-```python
-import md_manager as md
-pdb = md.PDB("inputfile.pdb")
-```
 
 ### Methods :
+
+```python
+from md_manager import PDB
+```
 
 `__init__` : Creates an instance of the `PDB` class.
 
@@ -47,9 +47,26 @@ args :
 
 - `write:bool = False` : Allow the creation of a the file is file not found.
 
+```python
+pdb = PDB("inputfile.pdb")
+```
+
 `__iter__` : Initialises the iteration over models.
 
+```python
+pdb = iter(pdb)
+```
+
 `__next__` : Iterates over the lines in the file and returns the DataFrame associated for each 'ENDMDL' in the file.
+
+```python
+pdb = iter(pdb)
+df = next(pdb)
+
+# or 
+for df in pdb:
+    (...)
+```
 
 `open` : Set the I/O wrapper associated to the instance of PDB in open mode.
 
@@ -101,6 +118,10 @@ args :
 
 - `line:str` : Line of a pdb file that starts with "ATOM"/"HETATM"
 
+```python
+atom = PDB.scan_pdb_line(line)
+```
+
 `generate_atom_line` : Generates a pdb line from an input Series that contains atom's information.
 
 args : 
@@ -109,6 +130,10 @@ args :
 
 - `atom_id:int` : Atom index in the pdb file.
 
+```python
+line = PDB.generate_atom_line(atom, atom_id = 1)
+```
+
 `generate_atom_lines` : Generates a list of lines to be written in a pdb file from input DataFrame and model index.
 
 args :
@@ -116,6 +141,10 @@ args :
 - `df:DataFrame` : DataFrame to convert in lines in pdb format.
 
 - `model_id:int = 1` : Number of the model associated to the current frame.
+
+```python
+lines = PDB.generate_atom_lines(df)
+```
 
 ## PDB object:
 
