@@ -234,11 +234,11 @@ class PDB:
         for _, chain in APO.groupby(DF_COLUMNS[4]):
             for _, atom in chain.iterrows():            
                 id += 1
-                lines.append(cls.__generate_atom_line(atom, atom_id=id))
+                lines.append(cls.generate_atom_line(atom, atom_id=id))
             lines.append("TER\n")
         for _, atom in HET.iterrows():
             id += 1
-            lines.append(cls.__generate_atom_line(atom, atom_id=id))
+            lines.append(cls.generate_atom_line(atom, atom_id=id))
         lines.append("ENDMDL\n")
                 
         return lines

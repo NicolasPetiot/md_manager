@@ -9,8 +9,6 @@ from scipy.spatial import distance_matrix
 import sys
 from urllib.request import urlopen
 
-
-
 ### IMPORTED IN md_manager ###
 __all__ = [
     "fetch_protein_data_bank",
