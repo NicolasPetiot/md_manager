@@ -48,7 +48,7 @@ ATOM_NAME_SELECTION_CHI = {
     "GLU" : ["N", "CA", "CB", "CG", "CD", "OE1"],
     "GLY" : ["CA"],
     "HIS" : ["N", "CA", "CB", "CG", "ND1"],
-    "ILE" : ["N", "CA", "CB", "CG1", "CD1"],
+    "ILE" : ["N", "CA", "CB", "CG1", "CD"],
     "LEU" : ["N", "CA", "CB", "CG", "CD1"],
     "LYS" : ["N", "CA", "CB", "CG", "CD", "CE", "NZ"],
     "MET" : ["N", "CA", "CB", "CG", "SD", "CE"],

@@ -61,7 +61,7 @@ def pfANM_hessian(nodes_position = None, nodes_mass = None, df = None, distance_
 
 def collective_modes(hessian):
     """
-    Returns a tuple containing the eigenvalues and eigenfrequencies of the inputed mass-weighted hessian. 
+    Returns a tuple containing the eigenvalues and eigenvectors of the inputed mass-weighted hessian. 
 
     The mode of frequency `eigenvals[k]` is given by `mode = eigenvecs[:, k]`.
     
@@ -74,49 +74,40 @@ def collective_modes(hessian):
     return eigenvals, eigenvecs
 
 def predicted_Bfactors(
-        eigenvals:np.ndarray=None, eigenvecs:np.ndarray=None, nodes_mass:np.ndarray = None,
-        hessian:np.ndarray=None, pdb_name:str = None, df:pd.DataFrame=None,
-        spring_constant=1.0, cutoff_radius=None, 
-        convert2bfactors=True
-    ):
+        df:pd.DataFrame, spring_constant = 1.0, model:str="pfANM", contact_threshold = 5.0, 
+        hessian:np.ndarray=None, eigenvals:np.ndarray=None, eigenvecs:np.ndarray=None, nodes_mass:np.ndarray=None, 
+        convert2bfactors = True
+    ) -> pd.DataFrame:
     """
-    Compute the thermal B-factors from the input informations.
-
-    The minimal use case is :
-    ```
-    import md_manager as md
-
-    with md.pdb(filename) as pdb:
-        b = md.NMA.predicted_Bfactors(pdb)
-    ```
-
-    To have a deeper overview of the use of this function. See "https://github.com/NicolasPetiot/md_manager/"
+    Returns a DataFrame that contains a prediction for thermal B-factors in the 'b' column.
     """
-    # Compute collective modes if needed.
-    NoneType = type(None)
-    if type(eigenvals) == NoneType or type(eigenvecs) == NoneType:
-        if type(hessian) == NoneType:
-            if type(pdb_name)==NoneType:
-                raise ValueError("Not enougth information. Unable to compute collective modes.")
-            df = pdb2df(pdb_name)
-
-            if type(cutoff_radius) == NoneType:
-                hessian = pfANM_hessian(df=df, spring_constant=spring_constant)
-            else :
-                hessian = ANM_hessian(df=df, spring_constant=spring_constant, cutoff_radius=cutoff_radius)
-        eigenvals, eigenvecs = collective_modes(hessian)
-
-    # compute nodes mass if needed :
-    if type(nodes_mass) == NoneType:
-        if type(df) == NoneType :
-            if type(pdb_name) == NoneType:
-                raise ValueError("Not enougth information. Unable to compute nodes mass.")
-            df = pdb2df(pdb_name)
-        nodes_mass = df.m.to_numpy(dtype = float)
-
-    else :
-        if type(nodes_mass) == pd.Series:
-            nodes_mass = nodes_mass.to_numpy(dtype = float)
-
-    return _jit_local_MSF(eigenvals, eigenvecs, nodes_mass, convert2bfactors)
+    if (eigenvals is not None) and (eigenvecs is not None) and (nodes_mass is not None):
+        df.b = _jit_local_MSF(eigenvals, eigenvecs, nodes_mass, convert2bfactors)
+        return df
     
+    if hessian is not None :
+        eigenvals, eigenvecs = md.NMA.collective_modes(hessian)
+        if nodes_mass is None :
+            nodes_mass = df.m.to_numpy()
+        df.b = _jit_local_MSF(eigenvals, eigenvecs, nodes_mass, convert2bfactors)
+        return df
+    
+    # using df to extract all datas
+    xyz = ["x", "y", "z"]
+    nodes_position       = df[xyz].to_numpy()
+    nodes_mass           = df.m.to_numpy()
+    distance_inter_nodes = distance_matrix(nodes_position, nodes_position)
+
+    if model == "pfANM":        
+        hessian = _jit_pfANM_hessian(nodes_position, nodes_mass, distance_inter_nodes, spring_constant)
+        eigenvals, eigenvecs = md.NMA.collective_modes(hessian)
+        df.b = _jit_local_MSF(eigenvals, eigenvecs, nodes_mass, convert2bfactors)
+        return df
+
+    if model == "ANM":
+        hessian = _jit_ANM_hessian(nodes_position, nodes_mass, distance_inter_nodes, spring_constant, contact_threshold)
+        eigenvals, eigenvecs = md.NMA.collective_modes(hessian)
+        df.b = _jit_local_MSF(eigenvals, eigenvecs, nodes_mass, convert2bfactors)
+        return df
+
+    raise ValueError(f"Unknown input model name '{model}'")
