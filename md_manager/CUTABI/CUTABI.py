@@ -31,7 +31,7 @@ def predict_alpha_helix(CA:pd.DataFrame):
     alpha = pd.Series(index=CA.index, dtype=int)
     for win in CA.rolling(4):
         sample_t = win.theta
-        sample_g = win.gamma[:-1]
+        sample_g = win.gamma[1:-1]
 
         # all the angles in the selected CA must fit the conditions on theta & gamma
         theta_test = ((sample_t > theta_min) & (sample_t < theta_max)).all()
