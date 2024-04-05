@@ -8,11 +8,7 @@ __all__ = [
     "dihedral_angles",
     "chain_theta_angles",
     "chain_gamma_angles",
-    "residue_chi_angles",
-    ### to be removed ###
-    "theta_angles",
-    "gamma_angles",
-    "chi_angles"
+    "residue_chi_angles"
 ]
 
 def chain_theta_angles(chain:pd.DataFrame, CA_only = True) -> pd.Series:
