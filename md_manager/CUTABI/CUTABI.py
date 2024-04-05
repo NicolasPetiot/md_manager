@@ -1,4 +1,4 @@
-from .._CGA import theta_angles, gamma_angles
+from .._CGA import chain_theta_angles, chain_gamma_angles
 
 import numpy as np
 import pandas as pd
@@ -8,49 +8,40 @@ __all__ = ["predict_alpha_helix", "predict_beta_sheets"]
 
 def predict_alpha_helix(CA:pd.DataFrame):
     """
-    Returns a pandas.Series indicating the position of the predicted alpha helix.
+    Returns a Series indicating if the atom bellongs to an alpha helix.
 
-    The input CA must be a pandas.DataFrame build he same way that the `md.PDBfile().read2df()` method and must only contains ' CA ' atoms. 
-    If CA does not contains a theta column, the conformational theta angle is computed using `md.theta_angles(CA)` method. 
-    If CA does not contains a gamma column, the conformational gamma angle is computed using `md.gamma_angles(CA)` method. 
-
-    The returned pandas.Series has the same index as the input CA and contains integers 1 for CA associated to alpha helix.
+    The input CA must only contains ' CA ' atoms. 
     """
-    # CUTABI parameters :
+    # CUTABI parameters
     theta_min, theta_max = (80.0, 105.0) # threshold for theta values
     gamma_min, gamma_max = (30.0,  80.0) # threshold for gamma values
 
-    # conformational angles :
-    columns = CA.columns
-    if not "theta" in columns:
-        CA["theta"] = theta_angles(df=CA)
-    if not "gamma" in columns:
-        CA["gamma"] = gamma_angles(df=CA)
+    alpha = pd.Series(False, index = CA.index, name = "alpha")
+    for _, chain in CA.groupby("chain"):
+        theta = chain_theta_angles(chain)
+        gamma = chain_gamma_angles(chain)
 
-    # CUTABI predictions alpha helix
-    alpha = pd.Series(index=CA.index, dtype=int)
-    for win in CA.rolling(4):
-        sample_t = win.theta
-        sample_g = win.gamma[1:-1]
+        theta.index = chain.index
+        gamma.index = chain.index
 
-        # all the angles in the selected CA must fit the conditions on theta & gamma
-        theta_test = ((sample_t > theta_min) & (sample_t < theta_max)).all()
-        gamma_test = ((sample_g > gamma_min) & (sample_g < gamma_max)).all()
+        # control not consecutive residues :
+        # TODO 
 
-        if theta_test and gamma_test:
-            alpha[win.index] = 1
+        theta_criterion = (theta > theta_min) & (theta < theta_max)
+        gamma_criterion = (gamma > gamma_min) & (gamma < gamma_max)
+        df = pd.DataFrame([theta_criterion, gamma_criterion]).T
+
+        for win in df.rolling(4):
+            if win.Theta.all() & win.Gamma[1:-1].all():
+                alpha[win.index] = True
 
     return alpha
 
 def predict_beta_sheets(CA:pd.DataFrame):
     """
-    Returns a tuple of pandas.Series indicating the position of the predicted beta sheets in the parallel and anti-parallel configuration.
+    Returns a Series indicating if the atom bellongs to an beta sheet.
 
-    The input CA must be a pandas.DataFrame build he same way that the `md.PDBfile().read2df()` method and must only contains ' CA ' atoms. 
-    If CA does not contains a theta column, the conformational theta angle is computed using `md.theta_angles(CA)` method. 
-    If CA does not contains a gamma column, the conformational gamma angle is computed using `md.gamma_angles(CA)` method. 
-
-    The returned pandas.Series has the same index as the input CA and contains integers 1 for CA associated to parallel beta sheets and integer -1 for anti-parallel ones.
+    The input CA must only contains ' CA ' atoms.
     """
     # CUTABI parameters :
     theta_min, theta_max = (100.0, 155.0) # threshold for theta values
@@ -59,68 +50,54 @@ def predict_beta_sheets(CA:pd.DataFrame):
     contact_threshold  = 5.5              # threshold for K;I & K+1;I+-1 distances
     contact_threshold2 = 6.8              # threshold for K+1;I+-2 distances
 
-    # conformational angles :
-    columns = CA.columns
-    if not "theta" in columns:
-        CA["theta"] = theta_angles(df=CA)
-    if not "gamma" in columns:
-        CA["gamma"] = gamma_angles(df=CA)
+    tmp = pd.Series(False, index = CA.index)
+    for _, chain in CA.groupby("chain"):
+        theta = chain_theta_angles(chain)
+        gamma = chain_gamma_angles(chain)
 
-    # CUTABI criterion on conformational angles :
-    angle_criterion = pd.Series(False, index=CA.index, dtype=bool)
-    for win in CA.rolling(2):
-        sample_t = win.theta
-        sample_g = win.gamma[:-1]
+        theta.index = chain.index
+        gamma.index = chain.index
 
-        # all the angles in the selected CA must fit the conditions on theta & gamma
-        theta_test = ((sample_t > theta_min) & (sample_t < theta_max)).all()
-        gamma_test = (sample_g.abs()> gamma_lim).all()
+        # control not consecutive residues :
+        # TODO 
 
-        if theta_test and gamma_test:
-            angle_criterion[win.index] = True
+        theta_criterion = (theta > theta_min) & (theta < theta_max)
+        gamma_criterion = gamma.abs() > gamma_lim
+        df = pd.DataFrame([theta_criterion, gamma_criterion]).T
 
-    Nca = len(CA)
-    xyz = CA[["x", "y", "z"]]
-    distance_inter_CA = distance_matrix(xyz, xyz)
+        for win in df.rolling(2):
+            if win.Theta.all() & win.Gamma[0:1].all():
+                tmp[win.index] = True
 
-    # CUTABI predictions : parallel beta sheets
-    beta_para = pd.Series(index = CA.index, dtype=int)
+    xyz = ["x", "y", "z"]
+    inter_atom_distance = distance_matrix(CA[xyz], CA[xyz])
+    beta = pd.Series(False, index = CA.index)
 
-    # K-I criterion 
-    test1 = distance_inter_CA[:-1, :-2] < contact_threshold
-    #K+1-I+1 criterion:
-    test2 = distance_inter_CA[1:, 1:-1] < contact_threshold
-    # K+1-I+2 criterion :
-    test3 = distance_inter_CA[1:,2:] < contact_threshold2
+    # Parallel sheet detection :
+    test1 = inter_atom_distance[:-1, :-2] < contact_threshold  # K  -I   criterion 
+    test2 = inter_atom_distance[1:, 1:-1] < contact_threshold  # K+1-I+1 criterion
+    test3 = inter_atom_distance[1:,2:]    < contact_threshold2 # K+1-I+2 criterion 
 
     distance_criterion = test1 & test2 & test3
-    K, I = np.where(distance_criterion)
-    for k, i in zip(K, I):
-        if i > k+2:
-            # test angle criterion :
-            idx = [i, i+1, k, k+1]
-            if angle_criterion.iloc[idx].all():
-                beta_para.iloc[idx] = 1
+    I, K = np.where(distance_criterion)
+    for i, k in zip(I, K):
+        if k > i+2:
+            idx = [k, k+1, i, i+1]
+            if tmp.iloc[idx].all():
+                beta.iloc[idx] = True
 
-    # CUTABI predictions : anti-parallel beta sheets :
-    beta_anti = pd.Series(index = CA.index, dtype=int)
-
-    # K-I criterion 
-    test1 = distance_inter_CA[:-1, 2:] < contact_threshold
-    #K+1-I+1 criterion:
-    test2 = distance_inter_CA[1:, 1:-1] < contact_threshold
-    # K+1-I+2 criterion :
-    test3 = distance_inter_CA[1:,:-2] < contact_threshold2
+    # Anti-parallel sheet detection :
+    test1 = inter_atom_distance[:-1, 2:] < contact_threshold # K - I criterion
+    test3 = inter_atom_distance[1:,:-2] < contact_threshold2 # K+1-I-2 criterion 
 
     distance_criterion = test1 & test2 & test3
-    K, I = np.where(distance_criterion)
+    I, K = np.where(distance_criterion)
     I += 2 # because test1[0, 0] -> k = 0, i = 2
-    for k, i in zip(K, I):
-        if i > k+2 and i+2 < Nca:
-            # test angle criterion :
-            idx = [i, i+1, k, k+1]
-            if angle_criterion.iloc[idx].all():
-                beta_anti.iloc[idx] = -1
+    for i, k in zip(I, K):
+        if k > i+2:
+            idx = [k, k+1, i, i+1]
+            if tmp.iloc[idx].all():
+                beta.iloc[idx] = True
 
-    return beta_para, beta_anti
+    return beta
 
