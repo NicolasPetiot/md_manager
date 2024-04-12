@@ -1,5 +1,5 @@
 # MD-manager
-md_manager is a set of python functions and methods that provide easy acess and manipulation of data for molecular dynamics simulations. It is developped in the research group of Physics Applied to Proteins at _université de bougrogne_. 
+MD-manager is a set of python functions and methods that provide easy acess and manipulation of data for molecular dynamics simulations. It is developped in the research group of Physics Applied to Proteins at _université de bougrogne_. 
 
 ## Installation:
 
@@ -146,13 +146,9 @@ args :
 lines = PDB.generate_atom_lines(df)
 ```
 
-## PDB object:
-
-MD-manager contains a `PDB` python class that is in charge of the interaction between DataFrames and text files. 
-
 ### Reading files:
 
-The `pdb2df` method is meant to return the first model of a pdb file. For MD trajectories, the `PDB` class allow the following syntax
+For MD trajectories, the `PDB` class allow the following syntax
 
 ```python
 import md_manager as md
@@ -161,7 +157,7 @@ for model in traj:
     # TODO: add data processing here
 ```
 
-or 
+or
 
 ```python
 import md_manager as md
@@ -176,7 +172,19 @@ for frame in traj:
     # TODO: add data processing here
 ```
 
-**N.B.**: The `PDB.__next__()` method uses the "ENDMDL" record name to return the atoms in the DataFrame. If none of the lines starts with "ENDMDL", the DataFrame will contains all atoms in the input file.
+**N.B.**: The `PDB.__next__()` method uses the "ENDMDL" record name to return the atoms in the DataFrame. If none of the lines starts with "ENDMDL", the DataFrame will contains all atoms in the input file. For files that contains a single frame, the `pdb2df` method is a much more suiable way to read pdb files.
+
+```python
+import md_manager as md
+df = md.pdb2df("file.pdb")
+```
+
+The `fetch_protein_data_bank` funcion allow to create DataFrames from the pdb code of a structure deposed in the [protein data bank](https://www.rcsb.org) database.
+
+```python
+import md_manager as md
+df = md.fetch_protein_data_bank("8q89")
+```
 
 ### Writing file:
 
@@ -223,7 +231,34 @@ xyz = np.array([
     [1, 1, 1]
 ])
 thetas = md.angles(xyz)
+gammas = md.dihedral_angles(xyz)
 ```
+
+It can be used to compute conformational landscape as did in [this](https://www.mdpi.com/2076-3417/12/16/8196) work.
+
+## Scodary structure prediction:
+MD-manager contains an implementation of the [CUTABI](https://www.frontiersin.org/articles/10.3389/fmolb.2021.786123/full) program. Such prediction can be performed as follows:
+
+```python
+import md_manager as md
+from md_manager.CUTABI import(
+    predict_alpha_helix, 
+    predict_beta_sheets
+)
+
+CA = md.fetch_protein_data_bank("8q89").query("name == 'CA'")
+
+alpha = predict_alpha_helix(CA)
+beta = predict_beta_sheets(CA)
+
+CA["alpha"] = alpha
+CA["beta"] = beta
+
+# Display residues identified in an alpha helix or beta sheet
+CA.query("alpha or beta")
+```
+
+
 
 ## Normal Mode Analysis:
 Normal Modes are extracted from the diagonalization of mass-weighted Hessian matricies. 
