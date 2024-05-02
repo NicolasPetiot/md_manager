@@ -1,9 +1,11 @@
 # MD-manager
-MD-manager is a set of python functions and methods that provide easy acess and manipulation of data for molecular dynamics simulations. It is developped in the research group of Physics Applied to Proteins at _université de bougrogne_. 
+
+MD-manager is a set of python functions and methods that provide easy acess and manipulation of data for molecular dynamics simulations. It is developped in the research group of Physics Applied to Proteins at _université de bougrogne_.
 
 ## Installation:
 
-As MD-manager is still in early stage of development, it is not yet available on the [pypi](https://pypi.org) code base. To download it use 
+As MD-manager is still in early stage of development, it is not yet available on the [pypi](https://pypi.org) code base. To download it use
+
 ```shell
 git clone https://github.com/NicolasPetiot/md_manager
 cd md_manager
@@ -15,6 +17,7 @@ pip install .
 A python class that provide methods to read and write pdb files.
 
 Unless your code specifically adds, remove or rename columns in the DataFrames, they contains the following columns :
+
 * `record_name` : Can be in the ATOM/HETATM class.
 * `name` : Atom name in PDB file.
 * `alt` : Alternate location indicator.
@@ -43,7 +46,6 @@ from md_manager import PDB
 args :
 
 - `filename:str` : File name or relative path of the pdb file to read/write.
-
 - `write:bool = False` : Allow the creation of a the file is file not found.
 
 ```python
@@ -69,7 +71,7 @@ for df in pdb:
 
 `open` : Set the I/O wrapper associated to the instance of PDB in open mode.
 
-args : 
+args :
 
 - `mode:str = "r"` I/O interation mode (read by default)
 
@@ -85,10 +87,9 @@ pdb.close()
 
 `write` : Read the input DataFrame(s) and creates the associated pdb file.
 
-args : 
+args :
 
 - `model:DataFrame` : Single frame to be written in the output file.
-
 - `model_list:list[DataFrame]` : List of frames to be written in the output file.
 
 ```python
@@ -113,7 +114,7 @@ By default, the Bfactors are set to 0.0 AA².
 
 The mass is extracted from the `ATOMIC_MASSES` dictionary (see _params.py)
 
-args : 
+args :
 
 - `line:str` : Line of a pdb file that starts with "ATOM"/"HETATM"
 
@@ -123,10 +124,9 @@ atom = PDB.scan_pdb_line(line)
 
 `generate_atom_line` : Generates a pdb line from an input Series that contains atom's information.
 
-args : 
+args :
 
 - `atom:Series` : Series associated to a line of a DataFrame.
-
 - `atom_id:int` : Atom index in the pdb file.
 
 ```python
@@ -138,7 +138,6 @@ line = PDB.generate_atom_line(atom, atom_id = 1)
 args :
 
 - `df:DataFrame` : DataFrame to convert in lines in pdb format.
-
 - `model_id:int = 1` : Number of the model associated to the current frame.
 
 ```python
@@ -217,7 +216,7 @@ new.write(dfs=[next(traj) for _ in range(10)]) # dfs is a list of DataFrames
 
 ## Conformational Angles:
 
-MD-manager contains methods that allow to compute conformational angles for proteins. 
+MD-manager contains methods that allow to compute conformational angles for proteins.
 
 ```python
 import md_manager as md
@@ -236,6 +235,7 @@ gammas = md.dihedral_angles(xyz)
 It can be used to compute conformational landscape as did in [this](https://www.mdpi.com/2076-3417/12/16/8196) work.
 
 ## Scodary structure prediction:
+
 MD-manager contains an implementation of the [CUTABI](https://www.frontiersin.org/articles/10.3389/fmolb.2021.786123/full) program. Such prediction can be performed as follows:
 
 ```python
@@ -258,7 +258,8 @@ CA.query("alpha or beta")
 ```
 
 ## Normal Mode Analysis:
-Normal Modes are extracted from the diagonalization of mass-weighted Hessian matricies. 
+
+Normal Modes are extracted from the diagonalization of mass-weighted Hessian matricies.
 Choosing a NMA model is equivalent to chose a way to build Hessians. The computation of the modes can be performed as follows.
 
 ```python
@@ -274,7 +275,6 @@ H = pfANM_hessian(df = df, spring_constant=1.0)
 eigenvals, modes = collective_modes(H)
 ```
 
-
-
 ---
+
 Contact : Nicolas.Petiot01@u-bourgogne.fr
