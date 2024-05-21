@@ -36,27 +36,20 @@ def ANM_hessian(nodes_position = None, nodes_mass = None, df = None, distance_in
 
     return _jit_ANM_hessian(nodes_position, nodes_mass, distance_inter_nodes, spring_constant, cutoff_radius)
 
-def pfANM_hessian(nodes_position = None, nodes_mass = None, df = None, distance_inter_nodes = None, spring_constant = 1.0) -> np.ndarray:
+def pfANM_hessian(df:pd.DataFrame = None, nodes_position:np.ndarray = None, nodes_mass:np.ndarray = None, distance_inter_nodes:np.ndarray = None, spring_constant = 1.0) -> np.ndarray:
     """
     
     """
-    NoneType = type(None)
-    if type(df) != NoneType:
+    if df is not None:
         nodes_position = df[["x", "y", "z"]].to_numpy(dtype = float)
         nodes_mass = df.m.to_numpy(dtype = float)
 
-    elif type(nodes_position) == NoneType or type(nodes_mass) == NoneType:
-        raise ValueError("`nodes_position` and/or `nodes_mass` are NoneType.")
-    
-    if type(nodes_position) != np.ndarray:
-        nodes_position = np.array(nodes_position, dtype=float)
+    elif (nodes_position is None) or (nodes_mass is None):
+        raise ValueError("Missing input. Please specify either `df` or `nodes_position` and `nodes_mass`")
 
-    if type(nodes_mass) != np.ndarray:
-        nodes_mass = np.array(nodes_mass, dtype=float)
-    
-    if type(distance_inter_nodes) == NoneType:
+    if distance_inter_nodes is None:
         distance_inter_nodes = distance_matrix(nodes_position, nodes_position)
-
+        
     return _jit_pfANM_hessian(nodes_position, nodes_mass, distance_inter_nodes, spring_constant)
 
 def collective_modes(hessian):
@@ -73,41 +66,16 @@ def collective_modes(hessian):
     
     return eigenvals, eigenvecs
 
-def predicted_Bfactors(
-        df:pd.DataFrame, spring_constant = 1.0, model:str="pfANM", contact_threshold = 5.0, 
-        hessian:np.ndarray=None, eigenvals:np.ndarray=None, eigenvecs:np.ndarray=None, nodes_mass:np.ndarray=None, 
-        convert2bfactors = True
-    ) -> pd.DataFrame:
-    """
-    Returns a DataFrame that contains a prediction for thermal B-factors in the 'b' column.
-    """
-    if (eigenvals is not None) and (eigenvecs is not None) and (nodes_mass is not None):
-        df.b = _jit_local_MSF(eigenvals, eigenvecs, nodes_mass, convert2bfactors)
-        return df
+def predicted_Bfactors(df:pd.DataFrame = None, eigenvalues:np.ndarray = None, eigenvectors:np.ndarray = None, convert2bfactors = True):
+    if df is None:
+        raise ValueError("Missing input. Please specify `df`.")
+
+    if (eigenvalues is None) or (eigenvectors is None):        
+        H = pfANM_hessian(df=df)
+        eigenvalues, eigenvectors = collective_modes(H)
+        
     
-    if hessian is not None :
-        eigenvals, eigenvecs = md.NMA.collective_modes(hessian)
-        if nodes_mass is None :
-            nodes_mass = df.m.to_numpy()
-        df.b = _jit_local_MSF(eigenvals, eigenvecs, nodes_mass, convert2bfactors)
-        return df
-    
-    # using df to extract all datas
-    xyz = ["x", "y", "z"]
-    nodes_position       = df[xyz].to_numpy()
-    nodes_mass           = df.m.to_numpy()
-    distance_inter_nodes = distance_matrix(nodes_position, nodes_position)
+    # B-factors computation:
+    nodes_mass = df.m.to_numpy()
 
-    if model == "pfANM":        
-        hessian = _jit_pfANM_hessian(nodes_position, nodes_mass, distance_inter_nodes, spring_constant)
-        eigenvals, eigenvecs = md.NMA.collective_modes(hessian)
-        df.b = _jit_local_MSF(eigenvals, eigenvecs, nodes_mass, convert2bfactors)
-        return df
-
-    if model == "ANM":
-        hessian = _jit_ANM_hessian(nodes_position, nodes_mass, distance_inter_nodes, spring_constant, contact_threshold)
-        eigenvals, eigenvecs = md.NMA.collective_modes(hessian)
-        df.b = _jit_local_MSF(eigenvals, eigenvecs, nodes_mass, convert2bfactors)
-        return df
-
-    raise ValueError(f"Unknown input model name '{model}'")
+    return _jit_local_MSF(eigenvalues, eigenvectors, nodes_mass, convert2bfactors=True)
