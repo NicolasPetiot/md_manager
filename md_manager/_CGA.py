@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from .utils._params import ATOM_NAME_SELECTION_CHI
+from ._params import ATOM_NAME_SELECTION_CHI
 
 __all__ = [
     "angles",

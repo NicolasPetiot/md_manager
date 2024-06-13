@@ -1,5 +1,5 @@
-from ..utils._ANM_utils import _jit_ANM_hessian, _jit_pfANM_hessian, _jit_local_MSF
-from ..utils._MD_utils import pdb2df
+from ._ANM_utils import _jit_ANM_hessian, _jit_pfANM_hessian, _jit_local_MSF
+from .._MD_utils import pdb2df
 
 import numpy as np
 import pandas as pd

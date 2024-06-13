@@ -1,4 +1,4 @@
-from .utils._params import DF_COLUMNS, DF_TYPES, ATOMIC_MASSES, STRING_FORMAT
+from ._params import DF_COLUMNS, DF_TYPES, ATOMIC_MASSES, STRING_FORMAT
 
 from pandas import DataFrame, Series
 
