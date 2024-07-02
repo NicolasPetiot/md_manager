@@ -202,11 +202,11 @@ beta = predict_beta_sheets(CA, CA_only =True)
 CA["helix"] = alpha
 CA["sheet"] = beta
 
-# Save structure with CUTABI prdicted helices and sheets:
+# Save structure with CUTABI predicted helices and sheets:
 md.df2pdb("8q89_CA_CUTABI_SS.pdb", CA)
 
 # Display residues identified in an alpha helix or beta sheet
-CA.query("alpha or beta")
+CA.query("helix or sheet")
 ```
 
 ## Normal Mode Analysis:
