@@ -30,7 +30,7 @@ def chain_theta_angles(chain:pd.DataFrame, CA_only = True) -> pd.Series:
 
     thetas = angles(chain[xyz].to_numpy())
 
-    s = pd.Series(index = chain.resi, name = "Theta", dtype = float)
+    s = pd.Series(index = chain.index, name = "Theta", dtype = float)
     s[s.index[1:-1]] = thetas
     return s
 
@@ -53,7 +53,7 @@ def chain_gamma_angles(chain:pd.DataFrame, CA_only = True) -> pd.Series:
         
     gammas = dihedral_angles(chain[xyz].to_numpy())
 
-    s = pd.Series(index = chain.resi, name = "Gamma", dtype = float)
+    s = pd.Series(index = chain.index, name = "Gamma", dtype = float)
     s[s.index[1:-2]] = gammas
     return s
 
