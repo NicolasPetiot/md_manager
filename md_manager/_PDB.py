@@ -1,123 +1,135 @@
-from ._params import DF_COLUMNS, DF_TYPES, ATOMIC_MASSES, STRING_FORMAT
+from ._params import DF_COLUMNS, DF_TYPES, ATOMIC_MASSES
 
-from pandas import DataFrame, Series
+import pandas as pd
+from io import TextIOWrapper
+
+import sys
+from urllib.request import urlopen
+
+__all__ = [
+    "PDB",
+    "pdb2df",
+    "df2pdb",
+    "fetch_PDB",
+    "COM",
+    "shift_df",
+    #rotate_df
+]
 
 class PDB:
-    """
+    """class that contains methods for pdb file rreading and writing"""
+    __write_format = {
+        "record_name" : lambda x : f"{x:<6s}",
+        "atom_id"     : lambda x : f"{x:5d}",
+        "blank1"      : lambda _ : " ",
+        "name"        : lambda x : f" {x:<3s}" if len(x) < 4 else f"{x:4s}",
+        "alt"         : lambda x : f"{x:1s}",
+        "resn"        : lambda x : f"{x:3s}",
+        "blank2"      : lambda _ : " ",
+        "chain"       : lambda x : f"{x:1s}",
+        "resi"        : lambda x : f"{x:4d}",
+        "insertion"   : lambda x : f"{x:1s}",
+        "blank3"      : lambda _ : 3*" ",
+        "x"           : lambda x : f"{x:8.3f}",
+        "y"           : lambda x : f"{x:8.3f}",
+        "z"           : lambda x : f"{x:8.3f}",
+        "occupancy"   : lambda x : f"{x:6.2f}",
+        "b"           : lambda x : f"{x:6.2f}",
+        "blank4"      : lambda _ : 7*" ",
+        "segi"        : lambda x : f"{x:<3s}",
+        "e"           : lambda x : f"{x:2s}",
+        "q"           : lambda x : f"{x:2s}"
+    }
     
-    """
-    def __init__(self, filename:str, write=False) -> None:
-        """
-        Creates an instance of the `PDB` class.
+    def __init__(self, filename:str, mode = "r") -> None:
+        self.file = open(filename, mode)
+        self.file.close()
 
-        args :
-
-        - `filename:str` : File name or relative path of the pdb file to read/write.
-
-        - `write:bool = False` : Allow the creation of a the file is file not found.
-        """
-        # Open filename
-        try :
-            self.__file = open(filename, "r")
-            self.__file.close()
-
-        except FileNotFoundError as e:
-            if write:
-                self.__file = open(filename, "w")
-                self.__file.close()
-
-            else :
-                raise e
-        
-        self.__is_open = False
-        self.__returned_once = False
+        self.__helix = []
+        self.__sheet = []
 
     def __iter__(self):
-        """
-        Initialises the iteration over models.
-        """
-        if not self.__is_open:
-            self.open()
-        self.__returned_once = False
-
+        """called with iter(self)"""
+        self.open()
+        # initialise ss:
+        helix, sheet = self.build_ss(line_iterator=self.file)
+        self.__helix = helix
+        self.__sheet = sheet
         return self
     
     def __next__(self):
-        """
-        Iterates over the lines in the file and returns the DataFrame associated for each 'ENDMDL' in the file.
-        """
-        atoms = []
-        
-        for line in self.__file:
-            if line.startswith("ENDMDL"):
-                self.__returned_once = True
-                return self.build_df_from_atoms(atoms)
-            
-            if line[:6] in {"ATOM  ", "HETATM"}:
-                atoms.append(self.scan_pdb_line(line))
+        """called with next(self)"""
+        if self.file.closed:
+            iter(self)
 
+        df = self.build_model(self.file, helix=self.__helix, sheet=self.__sheet)
+        if len (df) > 0:
+            return df
+        
         else :
-            if not self.__returned_once:
-                self.__returned_once = True
-                return self.build_df_from_atoms(atoms)
             self.close()
             raise StopIteration
-            
-    
+
     def open(self, mode = "r"):
-        """
-        Set the I/O wrapper associated to the instance of PDB in open mode.
+        """set the file in open mode"""
+        filename = self.file.name
+        self.file = open(filename, mode)
 
-        args : `mode:str = "r"` I/O interation mode (read by default)
-        """
-        self.__file = open(self.__file.name, mode)
-        self.__is_open = True
-    
     def close(self):
-        """
-        Set the I/O wrapper associated to the instance of PDB in close mode.
-        """
-        self.__file.close()
-        self.__is_open = False
-    
-    def write(self, model = None, model_list = None):
-        """
-        Read the input DataFrame(s) and creates the associated pdb file.
+        self.file.close()
 
-        args : 
+    ####################################################
+    #                                                  #
+    # Reading block: methods allowing PDB file reading #
+    #                                                  #
+    ####################################################
 
-        -  `model:DataFrame` : Single frame to be written in the output file.
+    @classmethod
+    def build_model(cls, line_iterator:TextIOWrapper|list[str], helix = [], sheet = []) -> pd.DataFrame:
+        """Creates DataFrame associated to the next frame in the pdb line iterator"""
+        # Reading Data:
+        atoms = []
+        for line in line_iterator:
+            record = line[:6].strip()
 
-        - `model_list:list[DataFrame]` : List of frames to be written in the output file.
-        """
-        lines = []
-        model_id = 1
-        if model is not None:
-            lines += self.generate_atom_lines(model, model_id)
+            # coord
+            if record in {"ATOM", "HETATM"}:
+                atoms.append(cls.read_coord(line, record))
 
-        elif model_list is not None :
-            for model in model_list:
-                lines += self.generate_atom_lines(model, model_id)
-                model_id += 1
+        
+            if record.startswith("END"):
+                break
+            
+        # Building DataFrame:
+        df = pd.DataFrame(
+            atoms, 
+            columns=DF_COLUMNS,
+            index=pd.Index([1+i for i in range(len(atoms))], name="atom_id")
+        ).astype(DF_TYPES)
 
-        self.open("w")
-        self.__file.writelines(lines)
-        self.close()
+        # Secondary structures:
+        query_str = f"{DF_COLUMNS[4]} == @chain and {DF_COLUMNS[5]} >= @resiMin and {DF_COLUMNS[5]} <= @resiMax"
+        if len(helix) > 0:
+            s = pd.Series(False, index = df.index, name="helix")
+            for chain, resiMin, resiMax in helix:
+                # chain resiMin&Max being used by the query string
+                idx = df.query(query_str).index
+                s[idx] = True
+            df["helix"] = s
+
+        if len(sheet) > 0:
+            s = pd.Series(False, index = df.index, name = "sheet")
+            for chain, resiMin, resiMax in sheet:
+                # chain resiMin&Max being used by the query string
+                idx = df.query(query_str).index
+                s[idx] = True
+            df["sheet"] = s
+
+        return df
 
 
     @staticmethod
-    def build_df_from_atoms(atoms) -> DataFrame:
-        """
-        Creates the DataFrame associated to input `atoms` with expected column names and types.
-
-        args :
-
-        - `atoms:list[tuple]` : List created from `scan_pdb_line` method.
-        """
-        return DataFrame(atoms, columns=DF_COLUMNS).astype(DF_TYPES)
-    
-    @staticmethod
-    def scan_pdb_line(line:str) -> tuple:
+    def read_coord(line:str, record:str) -> tuple:
         """
         Returns a tuple that contains the (record_name, name, alt, resn, chain, resi, insertion, x, y, z, occupancy, b, segi, elem, charge, mass) 
         informations about an atom line in the PDB file.
@@ -132,13 +144,6 @@ class PDB:
 
         - `line:str` : Line of a pdb file that starts with "ATOM"/"HETATM"
         """
-        if line.startswith("ATOM"):
-            record_name = "ATOM"
-        elif line.startswith("HETATM"):
-            record_name = "HETATM"
-        else :
-            raise ValueError("Input 'line' is not associated to an atom in a pdb file.")
-        
         #atom_id   = line[ 6:11]
         name      = line[12:16].strip()
         alt       = line[16:17].strip()
@@ -164,81 +169,251 @@ class PDB:
             mass      = ATOMIC_MASSES[elem]
         except KeyError:
             raise KeyError(f"Unknown element symbol '{elem}'. Please update the ATOMIC_MASSES dictionary in '_parameters.py'.")
-        return record_name, name, alt, resn, chain, resi, insertion, x, y, z, occupancy, b, segi, elem, charge, mass
-    
-    @staticmethod
-    def generate_atom_line(atom:Series, atom_id:int) -> str:
-        """
-        Generates a pdb line from an input series that contains atom's information.
-        
-        args : 
-
-        - `atom:Series` : Series associated to a line of a DataFrame.
-
-        - `atom_id:int` : Atom index in the pdb file.
-        """
-        line = ""
-        col = DF_COLUMNS[0]
-        line += STRING_FORMAT[col](atom[col])
-        line += f"{atom_id:5d}"
-
-        # blank 1:
-        line += " "
-
-        for col in DF_COLUMNS[1:4]:
-            data = atom[col]
-            line += STRING_FORMAT[col](data)
-
-        # blank 2:
-        line += " "
-        
-        for col in DF_COLUMNS[4:7]:
-            data = atom[col]
-            line += STRING_FORMAT[col](data)
-
-        # blank 3:
-        line += 3*" "
-
-        for col in DF_COLUMNS[7:13]:
-            data = atom[col]
-            line += STRING_FORMAT[col](data)
-
-        # blank 4:
-        line += 7*" "
-
-        for col in DF_COLUMNS[13:-1]:
-            data = atom[col]
-            line += STRING_FORMAT[col](data)
-
-        return line + "\n"
+        return record, name, alt, resn, chain, resi, insertion, x, y, z, occupancy, b, segi, elem, charge, mass
     
     @classmethod
-    def generate_atom_lines(cls, df:DataFrame, model_id:int = 1) -> list[str]:
-        """
-        Generates a list of lines to be written in a pdb file from input DataFrame and model index.
+    def build_ss(cls, line_iterator:TextIOWrapper|list[str]) -> tuple[list[str], list[str]]:
+        """Creates lists describing the position of helices and sheets in the line iterator."""
+        helix = []
+        sheet = []
+        for i, line in enumerate(line_iterator):
+            record = line[:6].strip()
 
-        args :
+            if record == "HELIX":
+                helix.append(cls.read_helix(line))
 
-        - `df:DataFrame` : DataFrame to convert in lines in pdb format.
+            if record == "SHEET":
+                sheet.append(cls.read_sheet(line))
 
-        - `model_id:int = 1` : Number of the model associated to the current frame.
-        """
-        lines = [f"MODEL{model_id:8d}\n"]
-        # split atoms and hetero atoms :
-        query_string = f"{DF_COLUMNS[0]} == 'ATOM'"
-        APO = df.query(query_string)
-        query_string = f"{DF_COLUMNS[0]} == 'HETATM'"
-        HET = df.query(query_string)
+            if record == "MODEL":
+                break
+            
+            if record == "ATOM" and type(line_iterator) == TextIOWrapper:
+                line_iterator.seek(i-1) # back to the previous line!
+                break
 
-        id = 0
-        for _, chain in APO.groupby(DF_COLUMNS[4]):
-            for _, atom in chain.iterrows():            
-                id += 1
-                lines.append(cls.generate_atom_line(atom, atom_id=id))
-            lines.append("TER\n")
-        for _, atom in HET.iterrows():
-            id += 1
-            lines.append(cls.generate_atom_line(atom, atom_id=id))
-        lines.append("ENDMDL\n")
+        return helix, sheet
+    
+    @staticmethod
+    def read_helix(line:str) -> tuple[str, int, int]:
+        """Returns relevant informations encoded in HELIX pdb line"""
+
+        chainMin = line[19]
+        resiMin = int(line[21:25])
+
+        chainMax = line[31]
+        resiMax = int(line[33:37])
+
+        if chainMin != chainMax:
+            raise ValueError("Helix in differrent chains")
+        
+        return chainMin, resiMin, resiMax
+    
+    @staticmethod
+    def read_sheet(line:str) -> tuple[str, int, int]:
+        """return relevant informations encoded in SHEET pdb line"""
+        chainMin = line[21]
+        resiMin = int(line[22:26])
+
+        chainMax = line[32]
+        resiMax = int(line[33:37])
+
+        if chainMin != chainMax:
+            raise ValueError("Helix in differrent chains")
+        
+        return chainMin, resiMin, resiMax
+
+    ####################################################
+    #                                                  #
+    # Writing block: methods allowing PDB file writing #
+    #                                                  #
+    ####################################################
+
+    def write_pdb(self, df:pd.DataFrame=None, dfs:list[pd.DataFrame]=None):
+        """Creates a structure/trajectory file in pdb format."""
+        self.open("w")
+        is_traj = False
+        if type(dfs) == list:
+            is_traj = True
+            df = dfs[0]
+
+        for line in self.build_ss_lines(df):
+            self.file.write(line)
+
+        for line in self.build_model_lines(df):
+            self.file.write(line)
+
+        if is_traj:
+            for i, df in enumerate(dfs[1:]):
+                for line in self.build_model_lines(df, model_id=i+2):
+                    self.file.write(line)
+        self.close()
+
+    @classmethod
+    def build_ss_lines(cls, df:pd.DataFrame)->list[str]:
+        """Returs a list of line to be written in a pdb file to describe secodary structures"""
+        lines = []
+        if "helix" in df.columns:
+            query_str = f"{DF_COLUMNS[1]} == 'CA' and helix"
+            col_slice = DF_COLUMNS[3:6]
+
+            ss = df.query(query_str)[col_slice]
+            resMin = ss[ss.resi.diff()   !=  1].values # starting points of helices
+            resMax = ss[ss.resi.diff(-1) != -1].values # end point of helices
+
+            for i, ((resnMin, chainMin, resiMin), (resnMax, chainMax, resiMax)) in enumerate(zip(resMin, resMax)):
+                line = f"HELIX  {i+1:3d} {cls.ss_identifier_string(i)}"
+
+                # initial residue:
+                line += f" {resnMin:3s} {chainMin:s} {resiMin:4d}"
+
+                # last residue:
+                line += f"  {resnMax:3s} {chainMax:s} {resiMax:4d}"
                 
+                line += "  1" # kind of helix not in memory (1 by default)
+
+                length = resiMax - resiMin
+                line += 31*" "
+                line += f"{length+1:5d}"
+                lines.append(line + "\n")
+
+        if "sheet" in df.columns:
+            query_str = f"{DF_COLUMNS[1]} == 'CA' and sheet"
+            col_slice = DF_COLUMNS[3:6]
+
+            ss = df.query(query_str)[col_slice]
+            resMin = ss[ss.resi.diff()   !=  1].values # starting points of sheets
+            resMax = ss[ss.resi.diff(-1) != -1].values # end point of sheets
+
+            for i,((resnMin, chainMin, resiMin), (resnMax, chainMax, resiMax)) in enumerate(zip(resMin, resMax)):
+                print(resnMin, chainMin, resiMin)
+                line = f"SHEET  {i+1:3d} {cls.ss_identifier_string(i)} 1"
+
+                # initial residue:
+                line += f" {resnMin:3s} {chainMin:s}{resiMin:4d}"
+
+                # last residue:
+                line += f"  {resnMax:3s} {chainMax:s}{resiMax:4d}"
+
+                line += "  0" # default sheet type
+                lines.append(line + "\n")
+
         return lines
+    
+    @classmethod
+    def build_model_lines(cls, df:pd.DataFrame, model_id = 1) -> list[str]:
+        """Returns a list of lines to be written in a file to describe atoms coordiates."""
+        df.index = pd.Index([1+i for i in range(len(df))], name = "atom_id") # make sure the atom idx are correct
+        APO = df.query("record_name == 'ATOM'")
+        HET = df.query("record_name == 'HETATM'")
+
+        lines = [f"MODEL{model_id:8d}\n"]
+        for _, chain in APO.groupby("chain"):
+            for _, atom in chain.iterrows():
+                lines.append(cls.__build_coord_line(atom))
+            lines.append("TER\n")
+
+        for _, atom in HET.iterrows():
+            lines.append(cls.__build_coord_line(atom))
+        lines.append("ENDMDL\n")
+        return lines
+    
+    @classmethod
+    def __build_coord_line(cls, atom:pd.Series) -> str:
+        """Returns a string describing an atom in pdb format."""
+        line = ""
+        for col, format in cls.__write_format.items():
+            if col.startswith("blank"):
+                line += format(col)
+
+            elif col.startswith("atom_id"):
+                line += format(atom.name)
+
+            else:
+                line += format(atom[col])
+
+        return line + "\n"
+
+    @staticmethod
+    def ss_identifier_string(id:int)->str:
+        """Converts a number into string identifier for pdb file"""
+        n = id % 9
+        remind = (id - n)//9
+
+        b = remind % 26
+        remind = (remind - b)//26
+
+        a = remind % 26
+
+        return f"{chr(65+a)}{chr(65+b)}{n+1}"
+    
+####################################################
+#                                                  #
+# Functions that make the use of MD-manager easier #
+#                                                  #
+####################################################
+
+def pdb2df(filename:str, atom_only = False) -> pd.DataFrame:
+    """Read all the atoms in the first MODEL of a pdb file"""
+    pdb = PDB(filename)
+    df = next(pdb)
+
+    if atom_only:
+        query_str = f"{DF_COLUMNS[0]} == 'ATOM'"
+        df = df.query(query_str)
+
+    return df
+
+def df2pdb(filename:str, data:pd.DataFrame|list[pd.DataFrame]):
+    """Generates a pdb structure/trajctory according to the type of the input data"""
+    new = PDB(filename, "w")
+    if type(data) == list:
+        new.write_pdb(dfs=data)
+    
+    else:
+        new.write_pdb(df=data)
+
+
+def fetch_PDB(pdb_code:str, atom_only = False) -> pd.DataFrame:
+    """
+    Returns a pandas.DataFrame associated to the structure loaded from the 'rcsb.org' website.
+    """
+    url = f"https://files.rcsb.org/download/{pdb_code.lower()}.pdb"
+    response = urlopen(url)
+
+    txt = response.read()
+    lines = (txt.decode("utf-8") if sys.version_info[0] >= 3 else txt.decode("ascii")).splitlines()
+
+    helix, sheet = PDB.build_ss(lines)
+    df = PDB.build_model(lines, helix, sheet)
+
+    if atom_only:
+        query_str = f"{DF_COLUMNS[0]} == 'ATOM'"
+        df = df.query(query_str)
+
+    return df
+
+def COM(df:pd.DataFrame) -> pd.Series:
+    """Returns the center of mass of an input DataFrame"""
+    xyz = ["x", "y", "z"]
+    com = pd.Series(0.0, index=xyz+["m"])
+
+    for _, atom in df.iterrows():
+        pos = atom[xyz].astype(float)
+        m = atom.m
+
+        com[xyz] += pos*m
+        com.m += m
+
+    com[xyz] /= com.m
+    return com
+
+def shift_df(df:pd.DataFrame, vec:pd.Series) -> pd.DataFrame:
+    """"""
+    xyz = ["x", "y", "z"]
+    df[xyz] = df.apply(
+        lambda s: s[xyz] + vec[xyz]
+    )
+    return df
+
+#TODO def rotate_df(df:pd.DataFrame, (...)) -> pd.DataFrame:
