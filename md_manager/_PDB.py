@@ -17,7 +17,7 @@ __all__ = [
 ]
 
 class PDB:
-    """class that contains methods for pdb file rreading and writing"""
+    """class that contains methods for pdb file reading and writing"""
     __write_format = {
         "record_name" : lambda x : f"{x:<6s}",
         "atom_id"     : lambda x : f"{x:5d}",
@@ -409,7 +409,7 @@ def COM(df:pd.DataFrame) -> pd.Series:
     return com
 
 def shift_df(df:pd.DataFrame, vec:pd.Series) -> pd.DataFrame:
-    """"""
+    """Returns a DataFrame containing the shifted structure."""
     xyz = ["x", "y", "z"]
     df[xyz] = df.apply(
         lambda s: s[xyz] + vec[xyz]

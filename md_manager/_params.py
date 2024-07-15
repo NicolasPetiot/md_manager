@@ -8,7 +8,7 @@ __all__ = [
     "DF_TYPES",
     "ONE_LETTER_CODE",
     #"THREE_LETTERS_CODE",
-    "STRING_FORMAT",
+    #"STRING_FORMAT",
 ]
 
 TEMPERATURE = 300.0          # K
@@ -64,21 +64,3 @@ ATOM_NAME_SELECTION_CHI = {
 DF_COLUMNS = ["record_name", "name", "alt", "resn", "chain", "resi", "insertion", "x", "y", "z", "occupancy", "b", "segi", "e", "q", "m"]
 type_list   = [str, str, str, str, str, int, str, float, float, float, float, float, str, str, str, float]
 DF_TYPES = {col:_type for col, _type in zip(DF_COLUMNS, type_list)}
-
-STRING_FORMAT = {
-    "record_name" : lambda x : f"{x:<6s}",
-    "name"        : lambda x : f" {x:<3s}" if len(x) < 4 else f"{x:4s}",
-    "alt"         : lambda x : f"{x:1s}",
-    "resn"        : lambda x : f"{x:3s}",
-    "chain"       : lambda x : f"{x:1s}",
-    "resi"        : lambda x : f"{x:4d}",
-    "insertion"   : lambda x : f"{x:1s}",
-    "x"           : lambda x : f"{x:8.3f}",
-    "y"           : lambda x : f"{x:8.3f}",
-    "z"           : lambda x : f"{x:8.3f}",
-    "occupancy"   : lambda x : f"{x:6.2f}",
-    "b"           : lambda x : f"{x:6.2f}",
-    "segi"        : lambda x : f"{x:<3s}",
-    "e"           : lambda x : f"{x:2s}",
-    "q"           : lambda x : f"{x:2s}"
-}

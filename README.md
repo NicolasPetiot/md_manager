@@ -4,7 +4,7 @@ MD-manager is a set of python functions and methods that provide easy acess and 
 
 ## Installation:
 
-As MD-manager is still in early stage of development, it is not yet available on the [pypi](https://pypi.org) code base. To download it use
+As MD-manager is still in early stage of development, it is not yet available on the [pypi](https://pypi.org) code base.
 
 ```shell
 git clone https://github.com/NicolasPetiot/md_manager
@@ -16,7 +16,7 @@ pip install .
 
 A python class that provide methods to read and write pdb files.
 
-Unless your code specifically adds, remove or rename columns in the DataFrames, they contains the following columns :
+By default, the DataFrames contains the following columns :
 
 * `record_name` : Can be in the ATOM/HETATM class.
 * `name` : Atom name in PDB file.
@@ -34,66 +34,6 @@ Unless your code specifically adds, remove or rename columns in the DataFrames, 
 * `e` : Element symbol. Used to determine the atomic mass.
 * `q` : Atom's charge.
 * `m` : Atom's mass in gram per mole.
-
-### Methods :
-
-```python
-from md_manager import PDB
-```
-
-`__init__` : Creates an instance of the `PDB` class.
-
-args :
-
-- `filename:str` : File name or relative path of the pdb file to read/write.
-- `mode = 'r'` : Allow the creation of a the file is file not found (for write mode).
-
-```python
-pdb = PDB("inputfile.pdb")
-```
-
-`__iter__` : Initialises the iteration over models.
-
-```python
-pdb = iter(pdb)
-```
-
-`__next__` : Iterates over the lines in the file and returns the DataFrame associated for each 'ENDMDL' in the file.
-
-```python
-df = next(pdb)
-
-# or 
-for df in pdb:
-    (...)
-```
-
-`open` : Set the I/O wrapper associated to the instance of PDB in open mode.
-
-args :
-
-- `mode:str = "r"` I/O interation mode (read by default)
-
-```python
-pdb.open()
-```
-
-`close` : Set the I/O wrapper associated to the instance of PDB in close mode.
-
-```python
-pdb.close()
-```
-
-`write` : Read the input DataFrame(s) and creates the associated pdb file.
-
-args :
-
-- `model:DataFrame` : Single frame to be written in the output file.
-- `model_list:list[DataFrame]` : List of frames to be written in the output file.
-
-```python
-pdb.write(df=df)
-```
 
 ### Reading files:
 
@@ -121,7 +61,7 @@ for frame in traj:
     # TODO: add data processing here
 ```
 
-**N.B.**: The `PDB.__next__()` method uses the "ENDMDL" record name to return the atoms in the DataFrame. If none of the lines starts with "ENDMDL", the DataFrame will contains all atoms in the input file. For files that contains a single frame, the `pdb2df` method is a much more suiable way to read pdb files.
+**N.B.**: The `PDB.__next__()` method uses the "ENDMDL" record name to return the atoms in the DataFrame. If none of the lines starts with "ENDMDL", the DataFrame will contains all atoms in the input file. For files that contains a single frame, the `pdb2df` function is a much more suiable way to read pdb files.
 
 ```python
 import md_manager as md
@@ -142,16 +82,13 @@ MD-manager allows to write pdb files as follows:
 ```python
 import md_manager as md
 
-df = md.fetch_PDB("5f0g")
-
-# remove hetero atoms:
-df = df.query("record_name == 'ATOM'")
+df = md.fetch_PDB("5f0g", atom_only = True) # remove hetero atoms
 
 # save to pdb format:
-md.df2pdb("out.pdb", df)
+md.df2pdb("5f0g_APO.pdb", df)
 ```
 
-Trajectories can be generated as well using a list f DataFrames:
+Trajectories can be generated as well using a list of DataFrames:
 
 ```python
 import md_manager as md

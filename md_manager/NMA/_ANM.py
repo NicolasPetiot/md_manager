@@ -1,81 +1,118 @@
-from ._ANM_utils import _jit_ANM_hessian, _jit_pfANM_hessian, _jit_local_MSF
-from .._PDB import pdb2df
+from .._params import BOLTZMANN, TEMPERATURE
 
 import numpy as np
 import pandas as pd
+from numba import njit
 from scipy.linalg import eigh
 from scipy.spatial import distance_matrix
 
 __all__ = [
     "ANM_hessian",
     "pfANM_hessian",
-    "collective_modes",
+    "local_MSF",
     "predicted_Bfactors"
 ]
 
-def ANM_hessian(nodes_position = None, nodes_mass = None, df = None, distance_inter_nodes = None, cutoff_radius = 5.0, spring_constant = 1.0) -> np.ndarray:
-    """
+@njit(cache=True)
+def ANM_hessian(node_position:np.ndarray, node_mass:np.ndarray, distance_inter_node:np.ndarray, cutoff_radius:float, spring_constant = 1.0) -> np.ndarray:
+    """Returns a mass-weighted Hessian based on ANM model"""
+    Nnodes = len(node_position)
+    hessian = np.zeros((3*Nnodes, 3*Nnodes))
+
+    # loop over nodes :
+    for i in range(Nnodes):
+        Ri = node_position[i, :]
+        Mi = node_mass[i]
+        for j in range(i+1, Nnodes):
+            if distance_inter_node[i, j] < cutoff_radius:
+                Rj = node_position[j, :]
+                Mj = node_mass[j]
+
+                Hij = jit_Hij(coordI=Ri, coordJ=Rj)
+                Hij = -Hij / distance_inter_node[i, j]**2 
+
+                hessian[3*i:3*(i+1), 3*j:3*(j+1)] = Hij / np.sqrt(Mi*Mj)
+                hessian[3*j:3*(j+1), 3*i:3*(i+1)] = Hij / np.sqrt(Mi*Mj)
+                hessian[3*i:3*(i+1), 3*i:3*(i+1)] -= Hij / Mi
+                hessian[3*j:3*(j+1), 3*j:3*(j+1)] -= Hij / Mj
     
-    """
-    NoneType = type(None)
-    if type(df) != NoneType:
-        nodes_position = df[["x", "y", "z"]].to_numpy(dtype = float)
-        nodes_mass = df.m.to_numpy(dtype = float)
+    return spring_constant * hessian
 
-    elif type(nodes_position) == NoneType or type(nodes_mass) == NoneType:
-        raise ValueError("`nodes_position` and/or `nodes_mass` are NoneType.")
+@njit(cache=True)
+def pfANM_hessian(node_position:np.ndarray, node_mass:np.ndarray, distance_inter_node:np.ndarray, spring_constant = 1.0) -> np.ndarray:
+    """Returns a mass-weighted Hessian based on pfANM model"""
+    Nnodes = len(node_position)
+    hessian = np.zeros((3*Nnodes, 3*Nnodes))
+
+    # loop over nodes :
+    for i in range(Nnodes):
+        Ri = node_position[i, :]
+        Mi = node_mass[i]
+        for j in range(i+1, Nnodes):
+            Rj = node_position[j, :]
+            Mj = node_mass[j]
+
+            Hij = jit_Hij(coordI=Ri, coordJ=Rj)
+            Hij = -Hij / distance_inter_node[i, j]**4 
+
+            hessian[3*i:3*(i+1), 3*j:3*(j+1)] = Hij / np.sqrt(Mi*Mj)
+            hessian[3*j:3*(j+1), 3*i:3*(i+1)] = Hij / np.sqrt(Mi*Mj)
+            hessian[3*i:3*(i+1), 3*i:3*(i+1)] -= Hij / Mi
+            hessian[3*j:3*(j+1), 3*j:3*(j+1)] -= Hij / Mj
     
-    if type(nodes_position) != np.ndarray:
-        nodes_position = np.array(nodes_position, dtype=float)
+    return spring_constant * hessian
 
-    if type(nodes_mass) != np.ndarray:
-        nodes_mass = np.array(nodes_mass, dtype=float)
+@njit(cache=True)
+def local_MSF(eigenvals:np.ndarray, eigenvecs:np.ndarray, node_mass:np.ndarray, convert2bfactors = False) -> np.ndarray:
+    """Computes the Mean Squared Fluctuations of the atoms arround their equilibrium position based on normal modes"""
+    Nnode = len(node_mass)
+    b = np.zeros(Nnode)
+
+    # scaling factor :
+    KT = BOLTZMANN * TEMPERATURE
+    if convert2bfactors :
+        KT = KT * 8*np.pi**2/3
     
-    if type(distance_inter_nodes) == NoneType:
-        distance_inter_nodes = distance_matrix(nodes_position, nodes_position)
+    for i in range(Nnode):
+        vi = eigenvecs[3*i:3*(i+1), :]
+        mi = node_mass[i]
 
-    return _jit_ANM_hessian(nodes_position, nodes_mass, distance_inter_nodes, spring_constant, cutoff_radius)
+        bi = np.sum(np.sum(vi**2, axis=0) / eigenvals)
+        b[i] = bi / mi
 
-def pfANM_hessian(df:pd.DataFrame = None, nodes_position:np.ndarray = None, nodes_mass:np.ndarray = None, distance_inter_nodes:np.ndarray = None, spring_constant = 1.0) -> np.ndarray:
-    """
-    
-    """
-    if df is not None:
-        nodes_position = df[["x", "y", "z"]].to_numpy(dtype = float)
-        nodes_mass = df.m.to_numpy(dtype = float)
+    return KT * b
 
-    elif (nodes_position is None) or (nodes_mass is None):
-        raise ValueError("Missing input. Please specify either `df` or `nodes_position` and `nodes_mass`")
+def predicted_Bfactors(df:pd.DataFrame, spring_constant = 1.0) -> pd.Series:
+    """Use the pfANM model to compute Normal Modes and deduce the predicted B-factors of the input structure"""
+    # Hessian:
+    xyz = ["x", "y", "z"]
+    node_position = df[xyz].to_numpy()
+    node_mass = df.m.to_numpy()
+    hessian = pfANM_hessian(node_position, node_mass, distance_matrix(node_position, node_position), spring_constant)
 
-    if distance_inter_nodes is None:
-        distance_inter_nodes = distance_matrix(nodes_position, nodes_position)
-        
-    return _jit_pfANM_hessian(nodes_position, nodes_mass, distance_inter_nodes, spring_constant)
-
-def collective_modes(hessian):
-    """
-    Returns a tuple containing the eigenvalues and eigenvectors of the inputed mass-weighted hessian. 
-
-    The mode of frequency `eigenvals[k]` is given by `mode = eigenvecs[:, k]`.
-    
-    Caution : 6 firsts null eigenmodes have been removed.
-    """
+    # Normal Modes:
     eigenvals, eigenvecs = eigh(hessian)
     eigenvals = eigenvals[6:]
     eigenvecs = eigenvecs[:, 6:]
-    
-    return eigenvals, eigenvecs
 
-def predicted_Bfactors(df:pd.DataFrame = None, eigenvalues:np.ndarray = None, eigenvectors:np.ndarray = None, convert2bfactors = True):
-    if df is None:
-        raise ValueError("Missing input. Please specify `df`.")
+    # Thermal B-factors:
+    return pd.Series(
+        local_MSF(eigenvals, eigenvecs, node_mass, convert2bfactors=True), 
+        index=df.index, name="b"
+    )
 
-    if (eigenvalues is None) or (eigenvectors is None):        
-        H = pfANM_hessian(df=df)
-        eigenvalues, eigenvectors = collective_modes(H)
-        
-    
-    # B-factors computation:
-    nodes_mass = df.m.to_numpy()
+@njit(cache=True)
+def jit_Hij(coordI:np.ndarray, coordJ:np.ndarray) -> np.ndarray:
+    """
+    Is the compiled version of the dot product Rij[:, None] @ Rij[None, :].
+    """
+    Rij = coordJ - coordI
+    Hij = np.zeros((3, 3))
+    for xi in range(3):
+        x = Rij[xi]
+        for yi in range(xi, 3):
+            y = Rij[yi]
 
-    return _jit_local_MSF(eigenvalues, eigenvectors, nodes_mass, convert2bfactors=True)
+            Hij[xi, yi] = x*y
+            Hij[yi, xi] = x*y
+    return Hij
