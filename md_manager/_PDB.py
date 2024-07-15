@@ -189,7 +189,7 @@ class PDB:
                 break
             
             if record == "ATOM" and type(line_iterator) == TextIOWrapper:
-                line_iterator.seek(i-1) # back to the previous line!
+                line_iterator.seek(i) # back to the previous line!
                 break
 
         return helix, sheet
