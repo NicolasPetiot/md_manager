@@ -10,7 +10,7 @@ setup(
     long_description=doc,
 
     packages=find_packages(),
-    install_requires=["pandas", "numpy", "numba", "scipy", "networkx"],
+    install_requires=["pandas", "numpy", "numba", "scipy"],
 
     url="https://github.com/NicolasPetiot/md_manager",
 

@@ -1,6 +1,7 @@
 from ._params import DF_COLUMNS, DF_TYPES, ATOMIC_MASSES
 
 import pandas as pd
+from typing import Union
 from io import TextIOWrapper
 
 import sys
@@ -85,7 +86,7 @@ class PDB:
     ####################################################
 
     @classmethod
-    def build_model(cls, line_iterator:TextIOWrapper|list[str], helix = [], sheet = []) -> pd.DataFrame:
+    def build_model(cls, line_iterator:Union[TextIOWrapper, list[str]], helix = [], sheet = []) -> pd.DataFrame:
         """Creates DataFrame associated to the next frame in the pdb line iterator"""
         # Reading Data:
         atoms = []
@@ -172,7 +173,7 @@ class PDB:
         return record, name, alt, resn, chain, resi, insertion, x, y, z, occupancy, b, segi, elem, charge, mass
     
     @classmethod
-    def build_ss(cls, line_iterator:TextIOWrapper|list[str]) -> tuple[list[str], list[str]]:
+    def build_ss(cls, line_iterator:Union[TextIOWrapper, list[str]]) -> tuple[list[str], list[str]]:
         """Creates lists describing the position of helices and sheets in the line iterator."""
         helix = []
         sheet = []
@@ -364,7 +365,7 @@ def pdb2df(filename:str, atom_only = False) -> pd.DataFrame:
 
     return df
 
-def df2pdb(filename:str, data:pd.DataFrame|list[pd.DataFrame]):
+def df2pdb(filename:str, data:Union[pd.DataFrame, list[pd.DataFrame]]):
     """Generates a pdb structure/trajctory according to the type of the input data"""
     new = PDB(filename, "w")
     if type(data) == list:
