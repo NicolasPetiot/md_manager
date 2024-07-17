@@ -412,9 +412,7 @@ def COM(df:pd.DataFrame) -> pd.Series:
 def shift_df(df:pd.DataFrame, vec:pd.Series) -> pd.DataFrame:
     """Returns a DataFrame containing the shifted structure."""
     xyz = ["x", "y", "z"]
-    df[xyz] = df.apply(
-        lambda s: s[xyz] + vec[xyz]
-    )
+    df[xyz] = df.apply(lambda s: s[xyz] + vec[xyz], axis=1)
     return df
 
 #TODO def rotate_df(df:pd.DataFrame, (...)) -> pd.DataFrame:
