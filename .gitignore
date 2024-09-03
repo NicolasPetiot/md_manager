@@ -1,4 +1,4 @@
-md_manager/__pycache__
+*/__pycache__
 build
 md_manager.egg-info
 test*
