@@ -187,14 +187,14 @@ class PDB(Traj):
         for _, group in APO.groupby("chain"):
             for _, atom in group.iterrows():
                 atom_id += 1
-                new_line = PDB.write_format(id, atom)
+                new_line = PDB.write_format(atom_id, atom)
                 self.file.write(new_line)
             self.file.write("TER\n")
 
         # Hetero atoms:
         for _, hetatm in HET.iterrows():
             atom_id += 1
-            new_line = PDB.write_format(id, hetatm)
+            new_line = PDB.write_format(atom_id, hetatm)
             self.file.write(new_line)
         self.file.write("ENDMDL\n")
 

@@ -8,7 +8,7 @@ import sys
 from urllib.request import urlopen
 from os import path
 
-__all__ = ["load", "pdb2df", "fetch_PDB", "atomic_masses", "com", "shift_df", "rotate_df", "angles", "dihedral_angles", "chain_theta_angles", "chain_gamma_angles", "residue_chi_angles"]
+__all__ = ["load", "save", "pdb2df", "fetch_PDB", "atomic_masses", "com", "shift_df", "rotate_df", "angles", "dihedral_angles", "chain_theta_angles", "chain_gamma_angles", "residue_chi_angles"]
 
 ######################################################################################################################################
 # Load structure
