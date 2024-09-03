@@ -3,12 +3,7 @@ __all__ = [
     "BOLTZMANN",
     "AVOGADRO",
     "ATOMIC_MASSES",
-    #"ATOM_NAME_SELECTION_CHI",
-    "DF_COLUMNS",
-    "DF_TYPES",
-    "ONE_LETTER_CODE",
-    #"THREE_LETTERS_CODE",
-    #"STRING_FORMAT",
+    #"ONE_LETTER_CODE"
 ]
 
 TEMPERATURE = 300.0          # K
@@ -29,8 +24,6 @@ ATOMIC_MASSES = {
     "AR" : 39.9480, # Argon
     "CA" : 40.0780, # Calcium
     "CU" : 63.5460, # Copper
-
-    "" : 1.0, 
 } # g/mol (see 'https://www.lenntech.com/periodic/mass/atomic-mass.htm')
 
 ONE_LETTER_CODE ={'VAL':'V', 'ILE':'I', 'LEU':'L', 'GLU':'E', 'GLN':'Q',
@@ -60,7 +53,3 @@ ATOM_NAME_SELECTION_CHI = {
     "TYR" : ["N", "CA", "CB", "CG", "CD1"],
     "VAL" : ["N", "CA", "CB", "CG1"]
 } # atoms used for computation of dihedral angles (see 'http://www.mlb.co.jp/linux/science/garlic/doc/commands/dihedrals.html')
-
-DF_COLUMNS = ["record_name", "name", "alt", "resn", "chain", "resi", "insertion", "x", "y", "z", "occupancy", "b", "segi", "e", "q", "m"]
-type_list   = [str, str, str, str, str, int, str, float, float, float, float, float, str, str, str, float]
-DF_TYPES = {col:_type for col, _type in zip(DF_COLUMNS, type_list)}

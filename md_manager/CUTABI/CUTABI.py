@@ -1,5 +1,4 @@
-from .._CGA import chain_theta_angles, chain_gamma_angles
-from .._params import DF_COLUMNS
+from ..df_operations import chain_theta_angles, chain_gamma_angles
 
 import numpy as np
 import pandas as pd
@@ -10,13 +9,11 @@ __all__ = ["predict_alpha_helix", "predict_beta_sheets"]
 def predict_alpha_helix(df:pd.DataFrame, CA_only = False):
     """
     Returns a Series indicating if the atom bellongs to an alpha helix.
-
-    The input CA must only contains ' CA ' atoms. 
     """
     if CA_only:
         CA = df
     else :
-        CA = df.query(f"{DF_COLUMNS[1]} == 'CA'")
+        CA = df.query(f"name == 'CA'")
 
     helix = pd.Series(False, index = CA.index)
 
@@ -24,15 +21,9 @@ def predict_alpha_helix(df:pd.DataFrame, CA_only = False):
     theta_min, theta_max = (80.0, 105.0) # threshold for theta values
     gamma_min, gamma_max = (30.0,  80.0) # threshold for gamma values
 
-    for _, chain in CA.groupby(DF_COLUMNS[4]):
+    for _, chain in CA.groupby("chain"):
         theta = chain_theta_angles(chain)
         gamma = chain_gamma_angles(chain)
-
-        theta.index = chain.index
-        gamma.index = chain.index
-
-        # control not consecutive residues :
-        # TODO 
 
         theta_criterion = (theta > theta_min) & (theta < theta_max)
         gamma_criterion = (gamma > gamma_min) & (gamma < gamma_max)
@@ -41,22 +32,6 @@ def predict_alpha_helix(df:pd.DataFrame, CA_only = False):
         for win in tmp.rolling(4):
             if win.Theta.all() & win.Gamma[1:-1].all():
                 helix[win.index] = True
-
-    # extend CA to all atoms:
-    if not CA_only:
-        # get indexes and re-build sheet Series with full atom description
-        idx, = np.where(helix)
-        helix = pd.Series(False, index=df.index)
-
-        # get chain and resi of the sheets:
-        chains = CA.iloc[idx].chain
-        res_idx = CA.iloc[idx].resi
-
-        # dictionary of atom indices 
-        groups  = df.groupby([DF_COLUMNS[4], DF_COLUMNS[5]]).indices
-        for chain, resi in zip(chains, res_idx):
-            atom_ids = groups[(chain, resi)]
-            helix.iloc[atom_ids] = True
 
     return helix
 
@@ -69,7 +44,7 @@ def predict_beta_sheets(df:pd.DataFrame, CA_only = False):
     if CA_only:
         CA = df
     else :
-        CA = df.query(f"{DF_COLUMNS[1]} == 'CA'")
+        CA = df.query(f"name == 'CA'")
 
     sheet = pd.Series(False, index = CA.index)
 
@@ -81,15 +56,9 @@ def predict_beta_sheets(df:pd.DataFrame, CA_only = False):
     contact_threshold2 = 6.8              # threshold for K+1;I+-2 distances
 
     angle_criterion = pd.Series(False, index = CA.index)
-    for _, chain in CA.groupby(DF_COLUMNS[4]):
+    for _, chain in CA.groupby("chain"):
         theta = chain_theta_angles(chain)
         gamma = chain_gamma_angles(chain)
-
-        theta.index = chain.index
-        gamma.index = chain.index
-
-        # control not consecutive residues :
-        # TODO 
 
         theta_criterion = (theta > theta_min) & (theta < theta_max)
         gamma_criterion = gamma.abs() > gamma_lim
@@ -101,7 +70,6 @@ def predict_beta_sheets(df:pd.DataFrame, CA_only = False):
 
     xyz = ["x", "y", "z"]
     inter_atom_distance = distance_matrix(CA[xyz], CA[xyz])
-    sheet = pd.Series(False, index = CA.index)
 
     # Parallel sheet detection :
     test1 = inter_atom_distance[:-1, :-2] < contact_threshold  # K  -I   criterion 
@@ -128,21 +96,5 @@ def predict_beta_sheets(df:pd.DataFrame, CA_only = False):
             idx = [k, k+1, i, i+1]
             if angle_criterion.iloc[idx].all():
                 sheet.iloc[idx] = True
-
-    # extend CA to all atoms:
-    if not CA_only:
-        # get indexes and re-build sheet Series with full atom description
-        idx, = np.where(sheet)
-        sheet = pd.Series(False, index=df.index)
-
-        # get chain and resi of the sheets:
-        chains = CA.iloc[idx].chain
-        res_idx = CA.iloc[idx].resi
-
-        # dictionary of atom indices 
-        groups  = df.groupby([DF_COLUMNS[4], DF_COLUMNS[5]]).indices
-        for chain, resi in zip(chains, res_idx):
-            atom_ids = groups[(chain, resi)]
-            sheet.iloc[atom_ids] = True
 
     return sheet

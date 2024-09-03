@@ -167,7 +167,7 @@ class PDB:
         elem      = line[76:78].strip()
         charge    = line[78:80].strip()
         try :
-            mass      = ATOMIC_MASSES[elem]
+            mass      = ATOMIC_MASSES[elem.upper()]
         except KeyError:
             raise KeyError(f"Unknown element symbol '{elem}'. Please update the ATOMIC_MASSES dictionary in '_parameters.py'.")
         return record, name, alt, resn, chain, resi, insertion, x, y, z, occupancy, b, segi, elem, charge, mass
