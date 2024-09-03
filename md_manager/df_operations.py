@@ -31,6 +31,27 @@ def load(filename:str) -> pd.DataFrame:
     traj = iter(traj)                 # Open file
     return next(traj)                 # Read coordinates
 
+def save(filename:str, data:pd.DataFrame|list[pd.DataFrame]):
+    """
+    Creates trajectory file from input data.
+    """
+    file_format = {
+        ".xyz" : XYZ,
+        ".pdb" : PDB,
+        ".gro" : GRO
+    }
+    _, ext = path.splitext(filename)
+    if not ext in file_format:
+        raise ValueError(f"Unknown extention '{ext}'. File must be in format {list(file_format.keys())}")
+    
+    new = file_format[ext](filename, "w")
+    if type(data) == pd.DataFrame:
+        data = [data]
+
+    for i, df in enumerate(data):
+        new.write_frame(df, model_id=i+1)
+
+
 def pdb2df(filename, atom_only = False) -> pd.DataFrame:
     """
     Retruns a DataFrame associated to the atoms found in the first model of the input PDB file.
@@ -60,6 +81,16 @@ def fetch_PDB(pdb_code:str, atom_only = False) -> pd.DataFrame:
         df = df.query("record_name == 'ATOM'")
 
     return df
+
+def df2pdb(filename:str, data:pd.DataFrame|list[pd.DataFrame]):
+    """Generates a pdb structure/trajctory according to the type of the input data"""
+    new = PDB(filename, "w")
+
+    if type(data) == pd.DataFrame:
+        data = [data]
+
+    for i, df in enumerate(data):
+        new.write_frame(df, model_id=i+1)
 
 ######################################################################################################################################
 # DataFrame manipulation
