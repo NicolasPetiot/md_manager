@@ -56,10 +56,10 @@ class XYZ(Traj):
     def write_format(s:pd.Series) -> str:
         """Create a line to be written in an XYZ file"""
         return "".join([
-            f"{s["name"]:4s} ",
-            f"{s["x"]} ",
-            f"{s["y"]} ",
-            f"{s["z"]}\n"
+            f"{s['name']:4s} ",
+            f"{s['x']} ",
+            f"{s['y']} ",
+            f"{s['z']}\n"
         ])
     
     @classmethod
