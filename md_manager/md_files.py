@@ -1,6 +1,11 @@
 import pandas as pd
 
-from typing import Self
+try :
+    from typing import Self
+
+except ImportError:
+    from typing_extensions import Self # python versions < 3.11
+
 from io import TextIOWrapper
 
 __all__ = ["XYZ", "PDB", "GRO"]
