@@ -1,52 +1,40 @@
-from ..df_operations import chain_theta_angles, chain_gamma_angles
+from ..df_operations import chain_theta_angles, chain_gamma_angles, check_chain_validity, InvalidChainException
 
 import numpy as np
 import pandas as pd
 from scipy.spatial import distance_matrix
 
-__all__ = ["predict_alpha_helix", "predict_beta_sheets"]
+__all__ = ["helix_criterion", "sheet_criterion", "predict_alpha_helix", "predict_beta_sheets"]
 
-def predict_alpha_helix(df:pd.DataFrame, CA_only = False):
+def helix_criterion(theta:pd.Series, gamma:pd.Series) -> pd.Series:
     """
-    Returns a Series indicating if the atom bellongs to an alpha helix.
-    """
-    if CA_only:
-        CA = df
-    else :
-        CA = df.query(f"name == 'CA'")
+    Takes the conformational angles of a single chain and returns a Series of boolean that indicates the position of alpha-helices.
 
-    helix = pd.Series(False, index = CA.index)
+    Before calling this method, please make sure that the indexes of both Series are identical.
+    """
+    helix = pd.Series(False, index = theta.index)
 
     # CUTABI parameters
     theta_min, theta_max = (80.0, 105.0) # threshold for theta values
     gamma_min, gamma_max = (30.0,  80.0) # threshold for gamma values
 
-    for _, chain in CA.groupby("chain"):
-        theta = chain_theta_angles(chain)
-        gamma = chain_gamma_angles(chain)
+    theta_criterion = (theta > theta_min) & (theta < theta_max)
+    gamma_criterion = (gamma > gamma_min) & (gamma < gamma_max)
+    tmp = pd.DataFrame({"Theta" : theta_criterion, "Gamma": gamma_criterion})
 
-        theta_criterion = (theta > theta_min) & (theta < theta_max)
-        gamma_criterion = (gamma > gamma_min) & (gamma < gamma_max)
-        tmp = pd.DataFrame([theta_criterion, gamma_criterion]).T
-
-        for win in tmp.rolling(4):
-            if win.Theta.all() & win.Gamma[1:-1].all():
-                helix[win.index] = True
+    for win in tmp.rolling(4):
+        if win.Theta.all() & win.Gamma[1:-1].all():
+            helix[win.index] = True
 
     return helix
 
-def predict_beta_sheets(df:pd.DataFrame, CA_only = False):
+def sheet_criterion(theta:pd.Series, gamma:pd.Series, xyz:pd.DataFrame) -> pd.Series:
     """
-    Returns a Series indicating if the atom bellongs to an beta sheet.
+    Takes the conformational angles of a single chain as well as the coordinates of the CA atoms and returns a Series of boolean that indicates the position of beta-sheets.
 
-    The input CA must only contains ' CA ' atoms.
+    Before calling this method, please make sure that the indexes of both Series and DataFrame are identical.
     """
-    if CA_only:
-        CA = df
-    else :
-        CA = df.query(f"name == 'CA'")
-
-    sheet = pd.Series(False, index = CA.index)
+    sheet = pd.Series(False, index = theta.index)
 
     # CUTABI parameters :
     theta_min, theta_max = (100.0, 155.0) # threshold for theta values
@@ -55,21 +43,17 @@ def predict_beta_sheets(df:pd.DataFrame, CA_only = False):
     contact_threshold  = 5.5              # threshold for K;I & K+1;I+-1 distances
     contact_threshold2 = 6.8              # threshold for K+1;I+-2 distances
 
-    angle_criterion = pd.Series(False, index = CA.index)
-    for _, chain in CA.groupby("chain"):
-        theta = chain_theta_angles(chain)
-        gamma = chain_gamma_angles(chain)
+    angle_criterion = pd.Series(False, index = sheet.index)
 
-        theta_criterion = (theta > theta_min) & (theta < theta_max)
-        gamma_criterion = gamma.abs() > gamma_lim
-        tmp = pd.DataFrame([theta_criterion, gamma_criterion]).T
+    theta_criterion = (theta > theta_min) & (theta < theta_max)
+    gamma_criterion = gamma.abs() > gamma_lim
+    tmp = pd.DataFrame({"Theta" : theta_criterion, "Gamma": gamma_criterion})
 
-        for win in tmp.rolling(2):
-            if win.Theta.all() & win.Gamma[0:1].all():
-                angle_criterion[win.index] = True
+    for win in tmp.rolling(2):
+        if win.Theta.all() & win.Gamma[0:1].all():
+            angle_criterion[win.index] = True
 
-    xyz = ["x", "y", "z"]
-    inter_atom_distance = distance_matrix(CA[xyz], CA[xyz])
+    inter_atom_distance = distance_matrix(xyz, xyz)
 
     # Parallel sheet detection :
     test1 = inter_atom_distance[:-1, :-2] < contact_threshold  # K  -I   criterion 
@@ -98,3 +82,68 @@ def predict_beta_sheets(df:pd.DataFrame, CA_only = False):
                 sheet.iloc[idx] = True
 
     return sheet
+
+def predict_alpha_helix(df:pd.DataFrame) -> pd.Series:
+    """
+    Uses CUTABI criterion to predict the position of alpha-helices.
+    """
+    alpha = pd.Series(False, index=df.index)
+
+    if not "name" in df:
+        CA = df.copy()
+    else:
+        names = set(df.name)
+        names.remove("CA")
+        if len(names) > 0:
+            CA = df.query("name == 'CA'")
+        else:
+            CA = df.copy()
+            
+    
+    check_df_infos(CA)
+
+    for _, chain in CA.groupby("chain"):
+        theta = chain_theta_angles(chain)
+        gamma = chain_gamma_angles(chain)
+        alpha_chain = helix_criterion(theta, gamma)
+
+        alpha[alpha_chain.index] = alpha_chain.values
+
+    return alpha
+
+def predict_beta_sheets(df:pd.DataFrame) -> pd.Series:
+    """
+    Uses CUTABI criterion to predict the position of alpha-helices.
+    """
+    beta = pd.Series(False, index=df.index)
+
+    if not "name" in df:
+        CA = df.copy()
+    else:
+        names = set(df.name)
+        names.remove("CA")
+        if len(names) > 0:
+            CA = df.query("name == 'CA'")
+        else:
+            CA = df.copy()
+            
+    
+    check_df_infos(CA)
+
+    for _, chain in CA.groupby("chain"):
+        theta = chain_theta_angles(chain)
+        gamma = chain_gamma_angles(chain)
+        xyz = chain[["x", "y", "z"]]
+        beta_chain = sheet_criterion(theta, gamma, xyz)
+        
+        beta[beta_chain.index] = beta_chain.values
+
+    return beta
+
+def check_df_infos(df:pd.DataFrame) -> None:
+    if not "chain" in df:
+        df["chain"] = "A"
+
+    for _, tmp in df.groupby("chain"):
+        check_chain_validity(tmp)
+    

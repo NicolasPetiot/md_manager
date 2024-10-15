@@ -179,6 +179,7 @@ def check_chain_validity(chain:pd.DataFrame, maxwarn = 5) -> None:
 
                 if Nwarn == maxwarn:
                     break
+                    print("Maximum warning reached...")
 
     if will_raise_exception:
         raise InvalidChainException("Found warning(s) that does not allows conformational angles calculation.")
@@ -217,14 +218,14 @@ def dihedral_angles(atom_position:np.ndarray) -> np.ndarray:
 
     return np.rad2deg(np.arctan2(sin, cos))
 
-def chain_theta_angles(chain:pd.DataFrame, maxwarn = 10) -> pd.Series:
+def chain_theta_angles(chain:pd.DataFrame) -> pd.Series:
     """
     Returns a pandas.Series that contains the computed Theta angles of the input chain. The series index is the `resi` number 
     and the associated value is the computed theta angles formed by the surounding "CA" atoms.
 
     Can be used as `frame.groupby(...)[["name", "resi", "x", "y", "z"]].apply(chain_theta_angles)` for multimers.
     """
-    check_chain_validity(chain, maxwarn)
+    #check_chain_validity(chain, maxwarn)
 
     xyz = ["x", "y", "z"]
     pos = chain[xyz].to_numpy()
@@ -234,14 +235,14 @@ def chain_theta_angles(chain:pd.DataFrame, maxwarn = 10) -> pd.Series:
 
     return theta
 
-def chain_gamma_angles(chain:pd.DataFrame, maxwarn = 10) -> pd.Series:
+def chain_gamma_angles(chain:pd.DataFrame) -> pd.Series:
     """
     Returns a pandas.Series that contains the computed Gamma angles of the input chain. The series index is the `resi` number 
     and the associated value is the computed gamma angles formed by the surounding "CA" atoms.
 
     Can be used as `frame.groupby(...)[["name", "resi", "x", "y", "z"]].apply(chain_gamma_angles)` for multimers.
     """
-    check_chain_validity(chain, maxwarn)
+    #check_chain_validity(chain, maxwarn)
 
     xyz = ["x", "y", "z"]
     pos = chain[xyz].to_numpy()
