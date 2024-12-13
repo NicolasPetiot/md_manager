@@ -1,5 +1,5 @@
 from .md_files import *
-from .parameters import ATOMIC_MASSES, ATOM_NAME_SELECTION_CHI
+from .parameters import ATOMIC_MASSES
 
 import pandas as pd
 import numpy as np
@@ -8,7 +8,7 @@ import sys
 from urllib.request import urlopen
 from os import path
 
-__all__ = ["load", "save", "pdb2df", "fetch_PDB", "atomic_masses", "com", "shift_df", "rotate_df", "angles", "dihedral_angles", "chain_theta_angles", "chain_gamma_angles", "residue_chi_angles"]
+__all__ = ["load", "save", "pdb2df", "fetch_PDB", "atomic_masses", "com", "shift_df", "rotate_df"]
 
 ######################################################################################################################################
 # Load structure
@@ -183,87 +183,3 @@ def check_chain_validity(chain:pd.DataFrame, maxwarn = 5) -> None:
 
     if will_raise_exception:
         raise InvalidChainException("Found warning(s) that does not allows conformational angles calculation.")
-
-def angles(atom_position:np.ndarray) -> np.ndarray:
-    """
-    Returns the angles associated to the ensemble of positions in 'atom_position'.
-    The length of the output is len(atom_position) - 2 because angles are not defined for the first and last atom of a chain.
-    """
-    B1 = atom_position[1:-1, :] - atom_position[:-2, :] 
-    B2 = atom_position[2:, :] - atom_position[1:-1, :] 
-
-    B1 = B1 / np.sqrt(np.sum(B1**2, axis = 1, keepdims=True))
-    B2 = B2 / np.sqrt(np.sum(B2**2, axis = 1, keepdims=True))
-
-    return np.rad2deg(np.arccos(np.sum(-B1 * B2, axis=1)))
-
-def dihedral_angles(atom_position:np.ndarray) -> np.ndarray:
-    """
-    Returns the dihedral angles associated to the ensemble of positions in 'atom_position'.
-    The length of the output is len(atom_position) - 3 because dihedral angles are not defined for the first, last and second last atom of a chain.
-    """
-    B1 = atom_position[1:-2, :] - atom_position[:-3, :] 
-    B2 = atom_position[2:-1, :] - atom_position[1:-2, :] 
-    B3 = atom_position[3:, :] - atom_position[2:-1, :]
-
-    B1 = B1 / np.sqrt(np.sum(B1**2, axis = 1, keepdims=True))
-    B2 = B2 / np.sqrt(np.sum(B2**2, axis = 1, keepdims=True))
-    B3 = B3 / np.sqrt(np.sum(B3**2, axis = 1, keepdims=True))
-
-    N1 = np.cross(B1, B2)
-    N2 = np.cross(B2, B3)
-
-    cos = np.sum(N1 * N2, axis = 1)
-    sin = np.sum(np.cross(N1, N2)*B2, axis = 1)
-
-    return np.rad2deg(np.arctan2(sin, cos))
-
-def chain_theta_angles(chain:pd.DataFrame) -> pd.Series:
-    """
-    Returns a pandas.Series that contains the computed Theta angles of the input chain. The series index is the `resi` number 
-    and the associated value is the computed theta angles formed by the surounding "CA" atoms.
-
-    Can be used as `frame.groupby(...)[["name", "resi", "x", "y", "z"]].apply(chain_theta_angles)` for multimers.
-    """
-    #check_chain_validity(chain, maxwarn)
-
-    xyz = ["x", "y", "z"]
-    pos = chain[xyz].to_numpy()
-
-    theta = pd.Series(index=chain.index, dtype=float, name="Theta")
-    theta.iloc[1:-1] = angles(pos)
-
-    return theta
-
-def chain_gamma_angles(chain:pd.DataFrame) -> pd.Series:
-    """
-    Returns a pandas.Series that contains the computed Gamma angles of the input chain. The series index is the `resi` number 
-    and the associated value is the computed gamma angles formed by the surounding "CA" atoms.
-
-    Can be used as `frame.groupby(...)[["name", "resi", "x", "y", "z"]].apply(chain_gamma_angles)` for multimers.
-    """
-    #check_chain_validity(chain, maxwarn)
-
-    xyz = ["x", "y", "z"]
-    pos = chain[xyz].to_numpy()
-
-    gamma = pd.Series(index=chain.index, dtype=float, name="Gamma")
-    gamma.iloc[1:-2] = dihedral_angles(pos)
-
-    return gamma
-
-def residue_chi_angles(res:pd.DataFrame) -> pd.Series:
-    """
-    Returns a pandas.Series that contains the computed Chi angles of the input residue. The series index in the 'ChiN' identifier 
-    and the associated value is the computed chi angle formed by the surounding atoms.
-
-    Can be used as `frame.groupby(...)[["name", "resn", "x", "y", "z"]].apply(residue_chi_angles)`.
-    """
-    xyz = ["x", "y", "z"]
-    atm_selection = ATOM_NAME_SELECTION_CHI[res.resn.unique()[0]]
-    res = res.query("name in @atm_selection")
-    chis = dihedral_angles(res[xyz].to_numpy())
-    chis = [chi for chi in chis] + [np.nan for _ in range(5 - len(chis))]
-    
-    return pd.Series(chis, index=["Chi%d"%i for i in range(1, 6)])
-

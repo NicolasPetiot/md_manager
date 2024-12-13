@@ -3,7 +3,8 @@ __all__ = [
     "BOLTZMANN",
     "AVOGADRO",
     "ATOMIC_MASSES",
-    #"ONE_LETTER_CODE"
+    "ONE_LETTER_CODE",
+    "ATOM_NAME_CHI"
 ]
 
 TEMPERATURE = 300.0          # K
@@ -31,6 +32,9 @@ ONE_LETTER_CODE ={'VAL':'V', 'ILE':'I', 'LEU':'L', 'GLU':'E', 'GLN':'Q',
 'ARG':'R', 'LYS':'K', 'SER':'S', 'THR':'T', 'MET':'M', 'ALA':'A',
 'GLY':'G', 'PRO':'P', 'CYS':'C'}
 
+ATOM_NAME_CHI = ["N", "CA", "CB", "CG", "SG", "CG1", "OG1", "CD", "SD", "CD1", "OD1", "ND1", "CE", "NE", "OE1", "CZ", "NZ", "NH1"]
+
+# obselete
 ATOM_NAME_SELECTION_CHI = {
     "ALA" : ["CA"],
     "ARG" : ["N", "CA", "CB", "CG", "CD", "NE", "CZ", "NH1"],
