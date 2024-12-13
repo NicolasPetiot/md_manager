@@ -1,6 +1,6 @@
-# MD-manager
+# MD-manager: Protein Conformation Analysis Toolkit
 
-MD-manager is a set of python functions and methods that provide easy acess and manipulation of data for molecular dynamics simulations. It is developped in the research group of Physics Applied to Proteins at _université de bougrogne_.
+MD-manager is a set of python functions and methods that provide easy acess and manipulation of data for molecular dynamics simulations. Python package designed for analyzing protein structure and conformational properties. This toolkit allows users to calculate various structural features such as bond angles, dihedral angles, backbone and side-chain conformations, and more. It is developped in the research group of Physics Applied to Proteins at _université de bougrogne_.
 
 ## Installation:
 
@@ -14,7 +14,13 @@ pip install .
 
 ## PDB class:
 
-A python class that provide methods to read and write pdb files.
+The PDB class in MD-manager is a specialized class for handling Protein Data Bank (PDB) files, enabling efficient manipulation and analysis of molecular structures. It provides methods for reading and writing atomic data in the PDB format, extracting key information such as atom coordinates, chain IDs, and residue details.
+
+    Reading PDB Files: The class can parse PDB files to extract and store atomic data in a structured pandas.DataFrame, making it easy to work with molecular information programmatically.
+    Writing PDB Files: It also supports exporting molecular data back to the PDB format, facilitating the generation of modified or newly simulated structures.
+    Frame Management: For handling molecular dynamics trajectories, the PDB class supports processing individual frames, allowing for manipulation of specific timesteps in the simulation.
+
+The class helps streamline the management of PDB files in bioinformatics workflows and supports custom analyses like calculating angles, distances, and conformational states.
 
 By default, the DataFrames contains the following columns :
 
@@ -65,7 +71,7 @@ for frame in traj:
 
 ```python
 import md_manager as md
-df = md.pdb2df("file.pdb")
+df = md.load("file.pdb")
 ```
 
 The `fetch_PDB` funcion allow to create DataFrames from the pdb code of a structure deposed in the [protein data bank](https://www.rcsb.org) database.
@@ -85,7 +91,7 @@ import md_manager as md
 df = md.fetch_PDB("5f0g", atom_only = True) # remove hetero atoms
 
 # save to pdb format:
-md.df2pdb("5f0g_APO.pdb", df)
+md.save("5f0g_APO.pdb", df)
 ```
 
 Trajectories can be generated as well using a list of DataFrames:
@@ -97,7 +103,7 @@ traj = md.PDB("full_traj.pdb")
 traj = iter(traj)
 
 # save 10 firsts models to pdb format:
-md.df2pdb("sub_traj.pdb", [next(traj) for _ in range(10)])
+md.save("sub_traj.pdb", [next(traj) for _ in range(10)])
 ```
 
 ## Conformational Angles:
