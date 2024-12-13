@@ -8,7 +8,7 @@ except ImportError:
 
 from io import TextIOWrapper
 
-__all__ = ["XYZ", "PDB", "GRO"]
+__all__ = ["Traj", "XYZ", "PDB", "GRO"]
 
 class Traj:
     def __init__(self, filename:str, mode = "r") -> None:

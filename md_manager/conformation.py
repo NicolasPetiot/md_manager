@@ -8,6 +8,8 @@ __all__ = [
     "dihedral_angles",
     "backbone_conformation",
     "side_chain_conformation",
+    #"chain_phi_angles",
+    #"chain_psi_angles",
     "chain_theta_angles",
     "chain_gamma_angles",
     "residue_chi_angles"
@@ -89,6 +91,12 @@ def side_chain_conformation(df:pd.DataFrame) -> pd.DataFrame:
     else:
         sele = sele.sort_values(by=["resi", "name"])
         return sele.groupby(["resi"])[["x", "y", "z"]].apply(residue_chi_angles)
+
+def chain_phi_angles(chain:pd.DataFrame) -> pd.Series:
+    raise NotImplemented
+
+def chain_psi_angles(chain:pd.DataFrame) -> pd.Series:
+    raise NotImplemented
 
 def chain_theta_angles(chain:pd.DataFrame) -> pd.Series:
     """
