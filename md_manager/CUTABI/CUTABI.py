@@ -103,7 +103,7 @@ def predict_alpha_helix(df:pd.DataFrame) -> pd.Series:
     
     #check_df_infos(CA)
     if not "chain" in df:
-        df["chain"] = "A"
+        CA["chain"] = "A"
 
     for _, chain in CA.groupby("chain"):
         theta = chain_theta_angles(chain)
@@ -133,7 +133,7 @@ def predict_beta_sheets(df:pd.DataFrame) -> pd.Series:
     
     #check_df_infos(CA)
     if not "chain" in df:
-        df["chain"] = "A"
+        CA["chain"] = "A"
 
     for _, chain in CA.groupby("chain"):
         theta = chain_theta_angles(chain)
