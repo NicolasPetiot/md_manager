@@ -1,4 +1,5 @@
-from ..df_operations import chain_theta_angles, chain_gamma_angles, check_chain_validity, InvalidChainException
+from ..df_operations import  check_chain_validity, InvalidChainException
+from ..conformation import chain_theta_angles, chain_gamma_angles
 
 import numpy as np
 import pandas as pd
@@ -8,7 +9,7 @@ __all__ = ["helix_criterion", "sheet_criterion", "predict_alpha_helix", "predict
 
 def helix_criterion(theta:pd.Series, gamma:pd.Series) -> pd.Series:
     """
-    Takes the conformational angles of a single chain and returns a Series of boolean that indicates the position of alpha-helices.
+    Takes the conformational angles of a structure and returns a Series of boolean that indicates the position of alpha-helices.
 
     Before calling this method, please make sure that the indexes of both Series are identical.
     """
@@ -30,7 +31,7 @@ def helix_criterion(theta:pd.Series, gamma:pd.Series) -> pd.Series:
 
 def sheet_criterion(theta:pd.Series, gamma:pd.Series, xyz:pd.DataFrame) -> pd.Series:
     """
-    Takes the conformational angles of a single chain as well as the coordinates of the CA atoms and returns a Series of boolean that indicates the position of beta-sheets.
+    Takes the conformational angles of a structure as well as the coordinates of the CA atoms and returns a Series of boolean that indicates the position of beta-sheets.
 
     Before calling this method, please make sure that the indexes of both Series and DataFrame are identical.
     """
@@ -100,7 +101,9 @@ def predict_alpha_helix(df:pd.DataFrame) -> pd.Series:
             CA = df.copy()
             
     
-    check_df_infos(CA)
+    #check_df_infos(CA)
+    if not "chain" in df:
+        df["chain"] = "A"
 
     for _, chain in CA.groupby("chain"):
         theta = chain_theta_angles(chain)
@@ -128,7 +131,9 @@ def predict_beta_sheets(df:pd.DataFrame) -> pd.Series:
             CA = df.copy()
             
     
-    check_df_infos(CA)
+    #check_df_infos(CA)
+    if not "chain" in df:
+        df["chain"] = "A"
 
     for _, chain in CA.groupby("chain"):
         theta = chain_theta_angles(chain)
