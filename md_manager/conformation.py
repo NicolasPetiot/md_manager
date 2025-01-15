@@ -212,8 +212,8 @@ def side_chain_conformation(df:pd.DataFrame) -> pd.DataFrame:
       bonds is considered to calculate the torsional angles.
     """
     # Select atoms and order them.
-    # Especially important because of prolines.
     sele = df.query("name in @ATOM_NAME_CHI").copy()
+    sele = sele.query("name != 'CZ' or resn == 'ARG'")
     sele["name"] = pd.Categorical(sele["name"], categories=ATOM_NAME_CHI, ordered=True)
 
     is_multimer = "chain" in df.columns and len(df["chain"].unique()) > 1
