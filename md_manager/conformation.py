@@ -212,8 +212,8 @@ def side_chain_conformation(df:pd.DataFrame) -> pd.DataFrame:
       bonds is considered to calculate the torsional angles.
     """
     # Select atoms and order them.
-    sele = df.query("name in @ATOM_NAME_CHI").copy()
-    sele = sele.query("name != 'CZ' or resn == 'ARG'")
+    sele = df.query("name in @ATOM_NAME_CHI")
+    sele = sele.query("name != 'CZ' or resn == 'ARG'").copy()
     sele["name"] = pd.Categorical(sele["name"], categories=ATOM_NAME_CHI, ordered=True)
 
     is_multimer = "chain" in df.columns and len(df["chain"].unique()) > 1
@@ -244,7 +244,6 @@ def chain_phi_psi_omega(chain:pd.DataFrame) -> pd.DataFrame:
         A DataFrame containing the 3D coordinates of atoms in the chain. The DataFrame must include:
         - 'x', 'y', 'z' columns for atomic coordinates.
         - A 'name' column that specifies atom names (e.g., 'N', 'CA', 'C').
-        - A 'chain' column (optional) to identify the chain in case of multiple chains in the dataset.
         
     Returns:
     pandas.DataFrame
@@ -261,7 +260,6 @@ def chain_phi_psi_omega(chain:pd.DataFrame) -> pd.DataFrame:
         ...     'y': [0.0, 0.1, 0.2, 0.3],
         ...     'z': [0.0, 0.1, 0.2, 0.3],
         ...     'name': ['N', 'CA', 'C', 'N'],
-        ...     'chain': ['A', 'A', 'A', 'A'],
         ...     'resi': [1, 2, 3, 4]
         ... })
         >>> chain_phi_psi_omega(chain)
@@ -272,12 +270,12 @@ def chain_phi_psi_omega(chain:pd.DataFrame) -> pd.DataFrame:
 
     Notes:
     - The function assumes the input `chain` contains the necessary backbone atoms ('N', 'CA', 'C') for each residue.
+    - The function assumes the input `chain` contains a single protein chain.
     - The calculation of Phi, Psi, and Omega angles depends on the correct ordering of atoms in the chain.
     - The residues without enough atoms (e.g., the first or last residue of the chain) will not have their angles calculated and will be assigned NaN values.
-    - The `chain` parameter can optionally contain a 'chain' column to handle multiple chains in a structure.
     - The output DataFrame's angles are in degrees.
     """
-    backbone = chain.query("name in ['N', 'CA', 'C'] and chain == 'A'")
+    backbone = chain.query("name in ['N', 'CA', 'C']")
     residues = backbone.query("name == 'CA'")
     Nres = len(residues)
 
