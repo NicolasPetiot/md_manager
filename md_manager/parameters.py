@@ -57,3 +57,6 @@ ATOM_NAME_SELECTION_CHI = {
     "TYR" : ["N", "CA", "CB", "CG", "CD1"],
     "VAL" : ["N", "CA", "CB", "CG1"]
 } # atoms used for computation of dihedral angles (see 'http://www.mlb.co.jp/linux/science/garlic/doc/commands/dihedrals.html')
+
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="MDAnalysis")

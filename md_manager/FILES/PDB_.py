@@ -64,7 +64,7 @@ def read_format(line:str) -> tuple[str, str, str, str, int, str, float, float, f
                 - Segment identifier, element symbol, and charge
         """
         return (
-            #line[:6].strip(),
+            line[:6].strip(),
             #int(line[6:11].strip()),
             line[12:16].strip(),        # Atom name
             line[16:17].strip(),        # Alternate location indicator

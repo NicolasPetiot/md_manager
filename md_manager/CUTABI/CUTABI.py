@@ -1,4 +1,3 @@
-from ..df_operations import  check_chain_validity, InvalidChainException
 from ..conformation import chain_theta_angles, chain_gamma_angles
 
 import numpy as np
@@ -238,8 +237,6 @@ def predict_alpha_helix(df:pd.DataFrame) -> pd.Series:
         else:
             CA = df.copy()
             
-    
-    #check_df_infos(CA)
     if not "chain" in df:
         CA["chain"] = "A"
 
@@ -312,8 +309,6 @@ def predict_beta_sheets(df:pd.DataFrame) -> pd.Series:
         else:
             CA = df.copy()
             
-    
-    #check_df_infos(CA)
     if not "chain" in df:
         CA["chain"] = "A"
 
@@ -326,11 +321,4 @@ def predict_beta_sheets(df:pd.DataFrame) -> pd.Series:
         beta[beta_chain.index] = beta_chain.values
 
     return beta
-
-def check_df_infos(df:pd.DataFrame) -> None:
-    if not "chain" in df:
-        df["chain"] = "A"
-
-    for _, tmp in df.groupby("chain"):
-        check_chain_validity(tmp)
     

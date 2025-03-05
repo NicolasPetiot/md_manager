@@ -44,7 +44,7 @@ class Traj:
             self.universe = Universe(*args, **kwargs)
 
         else:
-            df = kwargs["df"] if "df" in kwargs else args[0]
+            df = kwargs["df"] if "df" in kwargs else args[-1]
             if not isinstance(df, pd.DataFrame):
                 raise ValueError("In write mode, please specify a pandas DataFrame...")            
             self.universe = self.__universe_from_df__(df)
@@ -64,7 +64,7 @@ class Traj:
         Nres = len(ca)
 
         # Fill empy Universe with topology infos
-        u = Universe.empty(Natm, Nres, atom_resindex=[i for i in range(Nres)], trajectory=True)
+        u = Universe.empty(Natm, Nres, atom_resindex=df.resi.values, trajectory=True)
         u.add_TopologyAttr("names", df.name.values)
 
         if "resi" in self.topology_records:
@@ -86,7 +86,7 @@ class Traj:
             u.add_TopologyAttr("tempFactors", df["b"].values)
 
         if self.return_segi:
-            u.add_TopologyAttr("segids", df["segi"].values)
+            u.add_TopologyAttr("segids", df["segi"].unique())
 
         if self.return_e:
             u.add_TopologyAttr("elements", df["e"].values)
@@ -195,3 +195,6 @@ class Traj:
         self.frame.close()
 
         return df
+    
+    def save(self, filename:str):
+        raise NotImplementedError("`save` method not implemented for general Traj object. Please use one of the existing file format...")
