@@ -2,7 +2,6 @@ __all__ = [
     "TEMPERATURE",
     "BOLTZMANN",
     "AVOGADRO",
-    "ATOMIC_MASSES",
     "ONE_LETTER_CODE",
     "ATOM_NAME_CHI"
 ]
@@ -10,22 +9,6 @@ __all__ = [
 TEMPERATURE = 300.0          # K
 BOLTZMANN   = 1.987204259e-3 # kcal/mol/K (see : 'https://en.wikipedia.org/wiki/Boltzmann_constant')
 AVOGADRO    = 6.02214076e23  # 1/mol      (see : 'https://en.wikipedia.org/wiki/Avogadro_constant')
-
-ATOMIC_MASSES = {
-    "H" :  1.0079,
-    "C" : 12.0107,
-    "N" : 14.0067,
-    "O" : 15.9994,
-    "S" : 32.0650,
-
-    "NA" : 22.9897, # Sodium
-    "MG" : 24.3050, # Magnesium
-    "CL" : 35.4530, # Chlorine
-    "K" : 39.0983, # Potassium
-    "AR" : 39.9480, # Argon
-    "CA" : 40.0780, # Calcium
-    "CU" : 63.5460, # Copper
-} # g/mol (see 'https://www.lenntech.com/periodic/mass/atomic-mass.htm')
 
 ONE_LETTER_CODE ={'VAL':'V', 'ILE':'I', 'LEU':'L', 'GLU':'E', 'GLN':'Q',
 'ASP':'D', 'ASN':'N', 'HIS':'H', 'TRP':'W', 'PHE':'F', 'TYR':'Y',
