@@ -5,7 +5,7 @@ with open("README.md", "r") as file :
 
 setup(
     name="md_manager",
-    version="2.2",
+    version="2.2.1",
     description="A python module that allow molecular dynamics data analysis based on pandas DataFrames.",
     long_description=doc,
 
