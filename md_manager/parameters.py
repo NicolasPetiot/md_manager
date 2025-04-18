@@ -1,9 +1,16 @@
+from dataclasses import dataclass
+from typing import Any
+from warnings import filterwarnings
+filterwarnings("ignore", category=UserWarning, module="MDAnalysis")
+
 __all__ = [
     "TEMPERATURE",
     "BOLTZMANN",
     "AVOGADRO",
     "ONE_LETTER_CODE",
-    "ATOM_NAME_CHI"
+    "THREE_LETTER_CODE",
+    "ATOM_NAME_CHI",
+    "TrajParams"
 ]
 
 TEMPERATURE = 300.0          # K
@@ -15,31 +22,49 @@ ONE_LETTER_CODE ={'VAL':'V', 'ILE':'I', 'LEU':'L', 'GLU':'E', 'GLN':'Q',
 'ARG':'R', 'LYS':'K', 'SER':'S', 'THR':'T', 'MET':'M', 'ALA':'A',
 'GLY':'G', 'PRO':'P', 'CYS':'C'}
 
-ATOM_NAME_CHI = ["N", "CA", "CB", "CG", "SG", "CG1", "OG", "OG1", "CD", "SD", "CD1", "OD1", "ND1", "CE", "NE", "OE1", "CZ", "NZ", "NH1"]
+THREE_LETTER_CODE ={'V':'VAL', 'I':'ILE', 'L':'LEU', 'E':'GLU', 'Q':'GLN',
+'D':'ASP', 'N':'ASN', 'H':'HIS', 'W':'TRP', 'F':'PHE', 'Y':'TYR',
+'R':'ARG', 'K':'LYS', 'S':'SER', 'T':'THR', 'M':'MET', 'A':'ALA',
+'G':'GLY', 'P':'PRO', 'C':'CYS'}
 
-# obselete
-ATOM_NAME_SELECTION_CHI = {
-    "ALA" : ["CA"],
-    "ARG" : ["N", "CA", "CB", "CG", "CD", "NE", "CZ", "NH1"],
-    "ASN" : ["N", "CA", "CB", "CG", "OD1"],
-    "ASP" : ["N", "CA", "CB", "CG", "OD1"],
-    "CYS" : ["N", "CA", "CB", "SG"],
-    "GLN" : ["N", "CA", "CB", "CG", "CD", "OE1"],
-    "GLU" : ["N", "CA", "CB", "CG", "CD", "OE1"],
-    "GLY" : ["CA"],
-    "HIS" : ["N", "CA", "CB", "CG", "ND1"],
-    "ILE" : ["N", "CA", "CB", "CG1", "CD"],
-    "LEU" : ["N", "CA", "CB", "CG", "CD1"],
-    "LYS" : ["N", "CA", "CB", "CG", "CD", "CE", "NZ"],
-    "MET" : ["N", "CA", "CB", "CG", "SD", "CE"],
-    "PHE" : ["N", "CA", "CB", "CG", "CD1"],
-    "PRO" : ["N", "CA", "CB", "CG", "CD"],
-    "SER" : ["N", "CA", "CB", "OG"],
-    "THR" : ["N", "CA", "CB", "OG1"],
-    "TRP" : ["N", "CA", "CB", "CG", "CD1"],
-    "TYR" : ["N", "CA", "CB", "CG", "CD1"],
-    "VAL" : ["N", "CA", "CB", "CG1"]
-} # atoms used for computation of dihedral angles (see 'http://www.mlb.co.jp/linux/science/garlic/doc/commands/dihedrals.html')
+ATOM_NAME_CHI = ["N", "CA", "CB", "CG", "SG", "CG1", "OG1", "CD", "SD", "CD1", "OD1", "ND1", "CE", "NE", "OE1", "CZ", "NZ", "NH1"]
 
-import warnings
-warnings.filterwarnings("ignore", category=UserWarning, module="MDAnalysis")
+@dataclass
+class TrajParams:
+    # Topology Records:
+    return_record_name:bool = True
+    return_name:bool = True
+    return_alt:bool = True
+    return_resn:bool = True
+    return_chain:bool = True
+    return_resi:bool = True
+    return_icode:bool = True
+    return_occupancy:bool = True
+    return_b:bool = True
+    return_segi:bool = True
+    return_e:bool = True
+    return_q:bool = True
+    return_m:bool = True
+    return_type:bool = True
+    return_atom_id:bool = True
+
+    # Data Records:
+    return_v:bool = False
+
+ATTRIBUTE_RECORD_EQUIVALENCE = [
+    ("record_types", "record_name"),
+    ("names", "name"),
+    ("altLocs", "alt"),
+    ("resnames", "resn"),
+    ("chainIDs", "chain"),
+    ("resids", "resi"),
+    ("icodes", "icode"),
+    ("occupancies", "occupancy"),
+    ("tempfactors", "b"),
+    ("segindices", "segi"),
+    ("elements", "e"),
+    ("charges", "q"),
+    ("masses", "m"),
+    ("types", "type"),
+    ("ids", "atom_id")
+]
