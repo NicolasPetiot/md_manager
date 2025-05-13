@@ -1,4 +1,6 @@
 */__pycache__
 build
+dist
 md_manager.egg-info
 test*
+.pypirc

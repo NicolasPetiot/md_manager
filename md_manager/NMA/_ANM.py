@@ -1,5 +1,4 @@
 from ..parameters import BOLTZMANN, TEMPERATURE
-from ..df_operations import atomic_masses
 
 import numpy as np
 import pandas as pd
@@ -239,7 +238,7 @@ def predicted_Bfactors(df:pd.DataFrame, spring_constant = 1.0) -> pd.Series:
     df : pandas.DataFrame
         A DataFrame containing the atomic structure of the system. The DataFrame must include the following columns:
         - 'x', 'y', 'z': 3D coordinates of the atoms.
-        - Additional columns required for atomic mass computations (e.g., 'e' or 'm').
+        - 'm': Atomic masses in AMU.
     spring_constant : float, optional
         The spring constant used to define the stiffness of the interactions between atoms in the model. 
         Defaults to 1.0.
@@ -271,10 +270,7 @@ def predicted_Bfactors(df:pd.DataFrame, spring_constant = 1.0) -> pd.Series:
     # Hessian:
     xyz = ["x", "y", "z"]
     node_position = df[xyz].to_numpy()
-    if "m" in df.columns:
-        node_mass = df.m.to_numpy()
-    else :
-        node_mass = atomic_masses(df).to_numpy()
+    node_mass = df.m.to_numpy()
         
     hessian = pfANM_hessian(node_position, node_mass, distance_matrix(node_position, node_position), spring_constant)
 
