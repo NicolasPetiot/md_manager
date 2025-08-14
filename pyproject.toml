@@ -1,7 +1,7 @@
 [project]
-name = "md-manager-lib"
-version = "0.1.0"
-description = "Add your description here"
+name = "md-manager"
+version = "2.3.2"
+description = "A python module that allow molecular dynamics data analysis based on pandas DataFrames."
 readme = "README.md"
 authors = [
     { name = "NicolasPetiot", email = "nicolaspetiot2710@hotmail.fr" }
