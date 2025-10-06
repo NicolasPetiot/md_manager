@@ -9,6 +9,8 @@ from dataclasses import dataclass, asdict
 __all__ = [
     "TrajParams",
     "Traj",
+    "load", 
+    "save"
 ]
 
 @dataclass
@@ -182,3 +184,10 @@ class Traj:
     
     def save(self, *topology, frames="all", **kwargs):
         self.universe.atoms.write(*topology, frames=frames, **kwargs)
+
+
+def load(filename:str, *args, **kwargs) -> pd.DataFrame:    
+    return Traj(filename, *args, **kwargs).load()
+
+def save(df:pd.DataFrame, *filenames, frames = "all", **kwargs):
+    Traj.from_df(df).save(*filenames, frames=frames, **kwargs)
