@@ -19,7 +19,7 @@ def main():
         confs = traj_confs(traj, conf_function=md.side_chain_conformation)
         confs.to_pickle(args.chi)
 
-def traj_confs(traj:md.Traj, conf_function:function) -> pd.DataFrame:
+def traj_confs(traj:md.Traj, conf_function) -> pd.DataFrame:
     confs = []
     for i, df in enumerate(traj):
         conf = conf_function(df)

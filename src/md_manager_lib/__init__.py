@@ -8,4 +8,4 @@ from ._PDB import *
 from ._Files import *
 
 from .conformation import *
-from .df_manipulation import *
+from .df_utils import *

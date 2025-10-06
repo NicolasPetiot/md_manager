@@ -1,18 +1,14 @@
 [project]
 name = "md-manager"
 version = "2.3.2"
-description = "A python module that allow molecular dynamics data analysis based on pandas DataFrames."
+description = "Add your description here"
 readme = "README.md"
-authors = [
-    { name = "NicolasPetiot", email = "nicolaspetiot2710@hotmail.fr" }
-]
 requires-python = ">=3.12"
 dependencies = [
     "mdanalysis>=2.9.0",
-    "numpy>=2.3.2",
-    "pandas>=2.3.1",
+    "networkx>=3.5",
+    "numba>=0.62.1",
+    "numpy>=2.3.3",
+    "pandas>=2.3.3",
+    "scipy>=1.16.2",
 ]
-
-[build-system]
-requires = ["uv_build>=0.8.9,<0.9.0"]
-build-backend = "uv_build"
