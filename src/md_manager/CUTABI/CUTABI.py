@@ -1,5 +1,4 @@
-from ..conformation import chain_theta_angles, chain_gamma_angles
-
+from ..df_utils import chain_theta_angles, chain_gamma_angles
 import numpy as np
 import pandas as pd
 from scipy.spatial import distance_matrix

@@ -1,6 +1,6 @@
 [project]
 name = "md-manager"
-version = "2.4.0"
+version = "2.4.1"
 description = "A python module that allow molecular dynamics data analysis based on pandas DataFrames."
 readme = "README.md"
 requires-python = ">=3.12"
