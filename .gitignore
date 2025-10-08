@@ -1,6 +1,9 @@
-*/__pycache__
+__pycache__
 build
 dist
 md_manager.egg-info
-test*
 .pypirc
+.pytest*
+*.pdb
+*.gro
+*.xyz

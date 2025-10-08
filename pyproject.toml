@@ -27,6 +27,11 @@ Issues = "https://github.com/NicolasPetiot/md_manager/issues"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.uv.workspace]
+members = [
+    "tests",
+]
+
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
