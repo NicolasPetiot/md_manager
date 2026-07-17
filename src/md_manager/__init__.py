@@ -1,2 +1,2 @@
-def hello() -> str:
-    return "Hello from md-manager!"
+from .core import *
+from .fetch import *
