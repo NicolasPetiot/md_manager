@@ -6,32 +6,46 @@ from numpy.typing import NDArray
 
 from .core import universe_to_top
 
-def backbone_conf(u:mda.Universe, return_theta = True, return_gamma = True) -> pd.DataFrame:
+def backbone_theta_gamma(u:mda.Universe, return_theta = True, return_gamma = True) -> pd.DataFrame:
+    if not return_theta and not return_gamma:
+        raise ValueError("return_theta or return_gamma should be set to True")
+
+    expected_cols = {"record_name", "alt", "resn", "chain", "resi", "segi"}
+
     ca = u.select_atoms("name CA")
     top = universe_to_top(ca)
 
-    cols = [col for col in top.columns if col != "name"]
+    cols = [col for col in top.columns if col in expected_cols]
     top[["x", "y", "z"]] = ca.atoms.positions
 
     if "chain" not in cols:
         top["chain"] = 'A'
 
+    if return_theta:
+        top["Theta"] = theta_angles(top)
+        cols.append("Theta")
+    if return_gamma:
+        top["Gamma"] = gamma_angles(top)
+        cols.append("Gamma")
 
-    return top
+    df = pd.DataFrame(top[cols])
+    return df
 
 def theta_angles(df:pd.DataFrame) -> pd.Series:
     for _, chain in df.groupby("chain")[["x", "y", "z"]]:
         idx = chain.index
-        df.loc[idx[1:-1], "Theta"] = bend_angles(chain.values)
+        pos = np.array(chain)
+        df.loc[idx[1:-1], "Theta"] = bend_angles(pos)
 
-    return df["Theta"]
+    return df.Theta
 
 def gamma_angles(df:pd.DataFrame) -> pd.Series:
     for _, chain in df.groupby("chain")[["x", "y", "z"]]:
         idx = chain.index
-        df.loc[idx[1:-2], "Gamma"] = dihedral_angles(chain.values)
+        pos = np.array(chain)
+        df.loc[idx[1:-2], "Gamma"] = dihedral_angles(pos)
 
-    return df["Gamma"]
+    return df.Gamma
 
 def bend_angles(atom_position:NDArray) -> np.ndarray:
     """

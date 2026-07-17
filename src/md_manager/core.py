@@ -29,6 +29,24 @@ class Traj(mda.Universe):
         super().__init__(topology, *coordinates, all_coordinates=all_coordinates, format=format, topology_format=topology_format, transformations=transformations, guess_bonds=guess_bonds, vdwradii=vdwradii, fudge_factor=fudge_factor, lower_bound=lower_bound, in_memory=in_memory, context=context, to_guess=to_guess, force_guess=force_guess, in_memory_step=in_memory_step, **kwargs)
         self.top = universe_to_top(self.universe)
 
+    def __getitem__(self, i:int) -> pd.DataFrame:
+        df = self.top.copy()
+        self.trajectory[i]
+        if hasattr(self.atoms, "positions"):
+            df[["x", "y", "z"]] = getattr(self.atoms, "positions")
+
+        if hasattr(self.atoms, "velocities"):
+            df[["vx", "vy", "vz"]] = getattr(self.atoms, "velocities")
+
+        if hasattr(self.atoms, "forces"):
+            df[["fx", "fy", "fz"]] = getattr(self.atoms, "forces")
+
+        return df
+
+    def __len__(self) -> int:
+        return len(self.trajectory)
+
+
 def universe_to_top(u:mda.Universe) -> pd.DataFrame:
     """
     Function used to read the topology attributes of an input Universe and create the associated DataFrame.
