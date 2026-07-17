@@ -1,0 +1,1 @@
+BOLTZMANN = 8.314462618e-3 # kJ/mol/K
