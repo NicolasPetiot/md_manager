@@ -1,9 +1,9 @@
-from MDAnalysis import Universe
+import sys
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 from urllib.request import urlopen
 
-from pathlib import Path
-import sys
-from tempfile import NamedTemporaryFile
+from MDAnalysis import Universe
 
 __all__ = ["fetch_PDB"]
 

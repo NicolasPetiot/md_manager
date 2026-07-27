@@ -1,10 +1,10 @@
 import MDAnalysis as mda
-import pandas as pd
 import numpy as np
-
+import pandas as pd
 from numpy.typing import NDArray
 
 from .core import universe_to_top
+
 
 def backbone_theta_gamma(u:mda.Universe, return_theta = True, return_gamma = True) -> pd.DataFrame:
     if not return_theta and not return_gamma:

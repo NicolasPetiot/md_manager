@@ -1,10 +1,10 @@
-import MDAnalysis as mda
-import pandas as pd
-
-from MDAnalysis import NoDataError
 from warnings import warn
 
-__all__ = ["Traj", "universe_to_top", "top_to_universe"]
+import MDAnalysis as mda
+import pandas as pd
+from MDAnalysis import NoDataError
+
+__all__ = ["Traj", "top_to_universe", "universe_to_top"]
 
 ATTRIBUTE_RECORD_EQUIVALENCE = [
     ("record_types", "record_name"),
@@ -32,14 +32,17 @@ class Traj(mda.Universe):
     def __getitem__(self, i:int) -> pd.DataFrame:
         df = self.top.copy()
         self.trajectory[i]
-        if hasattr(self.atoms, "positions"):
-            df[["x", "y", "z"]] = getattr(self.atoms, "positions")
+        attr = "positions"
+        if hasattr(self.atoms, attr):
+            df[["x", "y", "z"]] = getattr(self.atoms, attr)
 
-        if hasattr(self.atoms, "velocities"):
-            df[["vx", "vy", "vz"]] = getattr(self.atoms, "velocities")
+        attr = "velocities"
+        if hasattr(self.atoms, attr):
+            df[["vx", "vy", "vz"]] = getattr(self.atoms, attr)
 
-        if hasattr(self.atoms, "forces"):
-            df[["fx", "fy", "fz"]] = getattr(self.atoms, "forces")
+        attr = "forces"
+        if hasattr(self.atoms, attr):
+            df[["fx", "fy", "fz"]] = getattr(self.atoms, attr)
 
         return df
 
@@ -99,7 +102,7 @@ def top_to_universe(top:pd.DataFrame, Nframe = 1) -> mda.Universe:
         Nseg = len(segments)
         res_segindex=[i for i, (_, grp) in enumerate(segments) for _ in range(len(grp.resi.unique()))]
 
-    u = Universe.empty(n_atoms=Natm, n_residues=Nres, n_segments=Nseg, n_frames=Nframe, atom_resindex=atm_resindex, residue_segindex=res_segindex, trajectory=True)
+    u = mda.Universe.empty(n_atoms=Natm, n_residues=Nres, n_segments=Nseg, n_frames=Nframe, atom_resindex=atm_resindex, residue_segindex=res_segindex, trajectory=True)
 
     for attr, col in ATTRIBUTE_RECORD_EQUIVALENCE:
         if col in top:

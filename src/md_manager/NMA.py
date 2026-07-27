@@ -1,9 +1,9 @@
 import MDAnalysis as mda
 import numpy as np
-
 from numpy.typing import NDArray
 
 from .constants import BOLTZMANN
+
 
 def pfANM(ag:mda.AtomGroup, gamma = 1.0) -> NDArray:
     """
