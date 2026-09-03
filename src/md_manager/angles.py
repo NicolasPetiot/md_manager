@@ -1,10 +1,13 @@
 import MDAnalysis as mda
 import numpy as np
 import pandas as pd
-from numpy.typing import NDArray
 
 from .core import universe_to_top
 
+__all__ = ["backbone_theta_gamma", "side_chain_chis", "theta_angles", "gamma_angles", "bend_angles", "dihedral_angles"]
+
+# Atom name used for chi angles:
+ATOM_NAME_CHI = ["N", "CA", "CB", "CG", "SG", "CG1", "OG1", "CD", "SD", "CD1", "OD1", "ND1", "CE", "NE", "OE1", "CZ", "NZ", "NH1"]
 
 def backbone_theta_gamma(u:mda.Universe, return_theta = True, return_gamma = True) -> pd.DataFrame:
     if not return_theta and not return_gamma:
@@ -31,23 +34,68 @@ def backbone_theta_gamma(u:mda.Universe, return_theta = True, return_gamma = Tru
     df = pd.DataFrame(top[cols])
     return df
 
-def theta_angles(df:pd.DataFrame) -> pd.Series:
-    for _, chain in df.groupby("chain")[["x", "y", "z"]]:
-        idx = chain.index
-        pos = np.array(chain)
-        df.loc[idx[1:-1], "Theta"] = bend_angles(pos)
+def side_chain_chis(u = mda.Universe) -> pd.DataFrame:
+
+    expected_cols = {"record_name", "alt", "resn", "chain", "resi", "segi"}
+
+    prot = u.select_atoms("protein")
+    top = universe_to_top(prot)
+
+    cols = [col for col in top.columns if col in expected_cols]
+
+
+    top[["x", "y", "z"]] = prot.atoms.positions
+    top = top.query("name in @ATOM_NAME_CHI")
+
+    groups = top.groupby(["chain", "resi"]) if "chain" in cols else top.groupby("resi")
+    return groups[["x", "y", "z"]].apply(__residue_chis)
+
+def __residue_chis(res:pd.DataFrame) -> pd.Series:
+    s = pd.Series(index = ["chi%d"%i for i in range(1, 6)], dtype=np.float32)
+
+    chis = dihedral_angles(res.values)
+    idx = ["chi%d"%(i+1) for i in range(len(chis))]
+
+    s[idx] = chis
+    return s
+
+def theta_angles(ca:pd.DataFrame) -> pd.Series:
+    """Computes Theta angles based on Cα atomic coordinates"""
+    if "chain" not in ca.columns:
+        return __chain_theta_angles(ca)
+
+    for _, chain in ca.groupby("chain")[["x", "y", "z"]]:
+        ca.loc[chain.index, "Theta"] = __chain_theta_angles(chain)
 
     return df.Theta
 
-def gamma_angles(df:pd.DataFrame) -> pd.Series:
-    for _, chain in df.groupby("chain")[["x", "y", "z"]]:
-        idx = chain.index
-        pos = np.array(chain)
-        df.loc[idx[1:-2], "Gamma"] = dihedral_angles(pos)
+def __chain_theta_angles(chain:pd.DataFrame) -> pd.Series:
+    idx = chain.index
+    pos = chain[["x", "y", "z"]].values
 
-    return df.Gamma
+    s = pd.Series(index = idx, dtype=np.float32)
+    s.loc[idx[1:-1]] = bend_angles(pos)
+    return s
 
-def bend_angles(atom_position:NDArray) -> np.ndarray:
+def gamma_angles(ca:pd.DataFrame) -> pd.Series:
+    """Computes Gamma angles based on Cα atomic coordinates"""
+    if "chain" not in ca.columns:
+        return __chain_gamma_angles(ca)
+
+    for _, chain in ca.groupby("chain")[["x", "y", "z"]]:
+        ca.loc[chain.index, "Gamma"] = __chain_gamma_angles(chain)
+
+    return ca.Gamma
+
+def __chain_gamma_angles(chain:pd.DataFrame) -> pd.Series:
+    idx = chain.index
+    pos = chain[["x", "y", "z"]].values
+
+    s = pd.Series(index = idx, dtype=np.float32)
+    s.loc[idx[1:-2]] = dihedral_angles(pos)
+    return s
+
+def bend_angles(atom_position:np.ndarray) -> np.ndarray:
     """
     Calculate the bond angles for an ensemble of atomic positions.
 

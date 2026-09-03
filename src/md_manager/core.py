@@ -29,6 +29,20 @@ class Traj(mda.Universe):
         super().__init__(topology, *coordinates, all_coordinates=all_coordinates, format=format, topology_format=topology_format, transformations=transformations, guess_bonds=guess_bonds, vdwradii=vdwradii, fudge_factor=fudge_factor, lower_bound=lower_bound, in_memory=in_memory, context=context, to_guess=to_guess, force_guess=force_guess, in_memory_step=in_memory_step, **kwargs)
         self.top = universe_to_top(self.universe)
 
+    @classmethod
+    def from_df(cls, df:pd.DataFrame, n_frame = 1):
+        traj = cls.__new__(cls)
+
+        columns = [col for _, col in ATTRIBUTE_RECORD_EQUIVALENCE if col in df.columns]
+        top = df[columns].copy()
+        u = top_to_universe(top, Nframe=n_frame)  # pyright: ignore[reportArgumentType]
+
+        setattr(traj, "universe", u)
+        traj.top = top
+
+        return traj
+
+
     def __getitem__(self, i:int) -> pd.DataFrame:
         df = self.top.copy()
         self.trajectory[i]
