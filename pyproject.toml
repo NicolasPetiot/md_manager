@@ -1,6 +1,6 @@
 [project]
 name = "md-manager"
-version = "3.0"
+version = "3.0.1"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -24,3 +24,9 @@ dev = [
     "mdanalysistests>=2.9.0",
     "pytest>=9.1.1",
 ]
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true

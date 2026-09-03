@@ -67,7 +67,7 @@ def theta_angles(ca:pd.DataFrame) -> pd.Series:
     for _, chain in ca.groupby("chain")[["x", "y", "z"]]:
         ca.loc[chain.index, "Theta"] = __chain_theta_angles(chain)
 
-    return df.Theta
+    return ca.Theta
 
 def __chain_theta_angles(chain:pd.DataFrame) -> pd.Series:
     idx = chain.index

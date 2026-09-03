@@ -4,7 +4,7 @@ import MDAnalysis as mda
 import pandas as pd
 from MDAnalysis import NoDataError
 
-__all__ = ["Traj", "top_to_universe", "universe_to_top"]
+__all__ = ["Traj", "top_to_universe", "universe_to_top", "load"]
 
 ATTRIBUTE_RECORD_EQUIVALENCE = [
     ("record_types", "record_name"),
@@ -135,3 +135,7 @@ def top_to_universe(top:pd.DataFrame, Nframe = 1) -> mda.Universe:
                 warn(f"{col} records are not yet supported by `top_to_universe`")
 
     return u
+
+def load(*args, **kwargs) -> pd.DataFrame:
+    traj = Traj(*args, **kwargs)
+    return traj[0]
