@@ -1,7 +1,7 @@
 from pathlib import Path
 
-import pytest
 import md_manager as md
+
 
 def test_backbone_theta_gamma():
     path = Path(__file__).parent / "testfile.pdb"

@@ -30,16 +30,18 @@ class Traj(mda.Universe):
         self.top = universe_to_top(self.universe)
 
     @classmethod
-    def from_df(cls, df:pd.DataFrame, n_frame = 1):
-        traj = cls.__new__(cls)
-
+    def from_df(cls, df: pd.DataFrame, n_frame=1):
         columns = [col for _, col in ATTRIBUTE_RECORD_EQUIVALENCE if col in df.columns]
         top = df[columns].copy()
-        u = top_to_universe(top, Nframe=n_frame)  # pyright: ignore[reportArgumentType]
 
-        setattr(traj, "universe", u)
+        traj = top_to_universe(top, Nframe=n_frame, universe_class=cls)
         traj.top = top
 
+        try:
+            traj.atoms.positions = df[["x", "y", "z"]].values
+
+        except KeyError:
+            pass
         return traj
 
 
@@ -64,7 +66,7 @@ class Traj(mda.Universe):
         return len(self.trajectory)
 
 
-def universe_to_top(u:mda.Universe) -> pd.DataFrame:
+def universe_to_top(u:mda.Universe | mda.AtomGroup) -> pd.DataFrame:
     """
     Function used to read the topology attributes of an input Universe and create the associated DataFrame.
 
@@ -83,7 +85,9 @@ def universe_to_top(u:mda.Universe) -> pd.DataFrame:
         top = top.set_index("atom_id")
     return top
 
-def top_to_universe(top:pd.DataFrame, Nframe = 1) -> mda.Universe:
+
+
+def top_to_universe(top:pd.DataFrame, Nframe = 1, universe_class=mda.Universe) -> mda.Universe:
     """
     Function used to read the topology records of an input DataFrame and create the associated Universe.
     """
@@ -116,7 +120,10 @@ def top_to_universe(top:pd.DataFrame, Nframe = 1) -> mda.Universe:
         Nseg = len(segments)
         res_segindex=[i for i, (_, grp) in enumerate(segments) for _ in range(len(grp.resi.unique()))]
 
-    u = mda.Universe.empty(n_atoms=Natm, n_residues=Nres, n_segments=Nseg, n_frames=Nframe, atom_resindex=atm_resindex, residue_segindex=res_segindex, trajectory=True)
+    u = universe_class.empty(
+        n_atoms=Natm, n_residues=Nres, n_segments=Nseg, n_frames=Nframe,
+        atom_resindex=atm_resindex, residue_segindex=res_segindex, trajectory=True
+    )
 
     for attr, col in ATTRIBUTE_RECORD_EQUIVALENCE:
         if col in top:

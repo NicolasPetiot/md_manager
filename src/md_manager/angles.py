@@ -2,9 +2,9 @@ import MDAnalysis as mda
 import numpy as np
 import pandas as pd
 
-from .core import universe_to_top
+from .core import Traj, universe_to_top
 
-__all__ = ["backbone_theta_gamma", "side_chain_chis", "theta_angles", "gamma_angles", "bend_angles", "dihedral_angles"]
+__all__ = ["backbone_theta_gamma", "bend_angles", "dihedral_angles", "gamma_angles", "side_chain_chis", "theta_angles"]
 
 # Atom name used for chi angles:
 ATOM_NAME_CHI = ["N", "CA", "CB", "CG", "SG", "CG1", "OG1", "CD", "SD", "CD1", "OD1", "ND1", "CE", "NE", "OE1", "CZ", "NZ", "NH1"]
@@ -34,7 +34,7 @@ def backbone_theta_gamma(u:mda.Universe, return_theta = True, return_gamma = Tru
     df = pd.DataFrame(top[cols])
     return df
 
-def side_chain_chis(u = mda.Universe) -> pd.DataFrame:
+def side_chain_chis(u = mda.Universe|Traj) -> pd.DataFrame:
 
     expected_cols = {"record_name", "alt", "resn", "chain", "resi", "segi"}
 
@@ -51,10 +51,10 @@ def side_chain_chis(u = mda.Universe) -> pd.DataFrame:
     return groups[["x", "y", "z"]].apply(__residue_chis)
 
 def __residue_chis(res:pd.DataFrame) -> pd.Series:
-    s = pd.Series(index = ["chi%d"%i for i in range(1, 6)], dtype=np.float32)
+    s = pd.Series(index = ["chi%d"%i for i in range(1, 6)], dtype=np.float32)  # noqa: UP031
 
     chis = dihedral_angles(res.values)
-    idx = ["chi%d"%(i+1) for i in range(len(chis))]
+    idx = ["chi%d"%(i+1) for i in range(len(chis))]  # noqa: UP031
 
     s[idx] = chis
     return s
